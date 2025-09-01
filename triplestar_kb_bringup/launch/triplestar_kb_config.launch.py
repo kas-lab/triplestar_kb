@@ -1,11 +1,12 @@
+import os
+
 import lifecycle_msgs
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
 from launch.events import matches_action
 from launch.substitutions import (
-    EnvironmentVariable,
     LaunchConfiguration,
-    PathJoinSubstitution,
 )
 from launch_ros.actions import LifecycleNode
 from launch_ros.event_handlers import OnStateTransition
@@ -13,15 +14,6 @@ from launch_ros.events.lifecycle import ChangeState
 
 
 def generate_launch_description():
-    """Generate launch description with conditional parameter loading."""
-    store_path = LaunchConfiguration("store_path")
-    preload_path = LaunchConfiguration("preload_path")
-    preload_files = LaunchConfiguration("preload_files")
-
-    default_store_path = PathJoinSubstitution(
-        [EnvironmentVariable("HOME"), ".local", "share", "triplestar_kb"]
-    )
-
     log_level_arg = DeclareLaunchArgument(
         "log-level",
         default_value="info",
@@ -29,22 +21,8 @@ def generate_launch_description():
     )
     log_level = LaunchConfiguration("log-level", default="info")
 
-    store_path_arg = DeclareLaunchArgument(
-        "store_path",
-        default_value=default_store_path,
-        description="Path to KB store directory",
-    )
-
-    preload_path_arg = DeclareLaunchArgument(
-        "preload_path",
-        default_value="/kas/ws/data",
-        description="Path to KB preload directory",
-    )
-
-    preload_files_arg = DeclareLaunchArgument(
-        "preload_files",
-        default_value="['']",
-        description="Comma-separated list of TTL files to preload (overrides config file if provided)",
+    config = os.path.join(
+        get_package_share_directory("triplestar_kb_bringup"), "config", "kb_params.yaml"
     )
 
     triplestar_kb_node = LifecycleNode(
@@ -53,13 +31,7 @@ def generate_launch_description():
         name="triplestar_kb",
         namespace="",
         output="screen",
-        parameters=[
-            {
-                "store_path": store_path,
-                "preload_files": preload_files,
-                "preload_path": preload_path,
-            }
-        ],
+        parameters=[config],
         arguments=["--ros-args", "--log-level", ["triplestar_kb:=", log_level]],
     )
 
@@ -88,9 +60,6 @@ def generate_launch_description():
     return LaunchDescription(
         [
             log_level_arg,
-            store_path_arg,
-            preload_files_arg,
-            preload_path_arg,
             triplestar_kb_node,
             triplestar_kb_node_config_event,
             triplestar_kb_node_activate_event,
