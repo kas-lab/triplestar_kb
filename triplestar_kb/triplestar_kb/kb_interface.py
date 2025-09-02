@@ -168,7 +168,7 @@ class TriplestarKBInterface:
         try:
             result = self.store.query(query, custom_functions=self.custom_functions)
             result_json = result.serialize(format=QueryResultsFormat.JSON)
-            return str(result_json)
+            return result_json.decode("utf-8")
         except Exception as e:
             self.logger.error(f"Query execution failed: {e}")
 
