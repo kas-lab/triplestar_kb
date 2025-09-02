@@ -11,7 +11,7 @@ from triplestar_kb_msgs.srv import Query
 
 from .kb_interface import TriplestarKBInterface
 from .msg_to_rdf import ros_msg_to_literal
-from .query_time_subscriber import QueryTimeSubscriber
+from .query_time_subscriber import QueryTimeSubscriber, QueryTimeTFSubscriber
 
 XSD = "http://www.w3.org/2001/XMLSchema#"
 EX = "http://example.org/"
@@ -32,7 +32,10 @@ class RosTriplestarKBInterface(LifecycleNode):
         self.declare_parameter("store_path", rclpy.Parameter.Type.STRING)
         self.declare_parameter("preload_path", rclpy.Parameter.Type.STRING)
         self.declare_parameter("preload_files", rclpy.Parameter.Type.STRING_ARRAY)
-        self.declare_parameter("query_time_subscriptions")
+        self.declare_parameter("query_time_subscriptions", rclpy.Parameter.Type.STRING)
+        self.declare_parameter(
+            "query_time_tf_subscriptions", rclpy.Parameter.Type.STRING
+        )
 
         self.kb: Optional[TriplestarKBInterface] = None
 
@@ -108,19 +111,33 @@ class RosTriplestarKBInterface(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def _create_query_time_subscriptions(self):
-        query_time_subscriptions_param = yaml.safe_load(
+        query_time_subscriptions = yaml.safe_load(
             self.get_parameter("query_time_subscriptions").value
         )
-        self.get_logger().info(
-            f"recieved query time subscriptions: {query_time_subscriptions_param}"
+        query_time_tf_subscriptions = yaml.safe_load(
+            self.get_parameter("query_time_tf_subscriptions").value
         )
 
-        for name, values in query_time_subscriptions_param.items():
+        self.get_logger().info(
+            f"recieved query time subscriptions: {query_time_subscriptions}"
+        )
+        self.get_logger().info(
+            f"recieved query time TF subscriptions: {query_time_tf_subscriptions}"
+        )
+
+        for name, values in query_time_subscriptions.items():
             self.get_logger().info(
                 f"Creating query time subscription for {name} on topic {values['topic']}"
             )
             self.query_time_subs[name] = QueryTimeSubscriber(
                 node=self, topic_name=values["topic"]
+            )
+
+        self.get_logger().info("Creating query time TF subscriptions...")
+
+        for name, values in query_time_tf_subscriptions.items():
+            self.query_time_subs[name] = QueryTimeTFSubscriber(
+                node=self, from_frame=values["from_frame"], to_frame=values["to_frame"]
             )
 
     def _preload_files(self) -> bool:
