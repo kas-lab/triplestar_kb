@@ -9,6 +9,7 @@ from geometry_msgs.msg import (
 from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import NamedNode
 from sensor_msgs.msg import Temperature
+from std_msgs.msg import Bool, Float32, Int32, String
 
 from triplestar_kb.msg_to_rdf import ros_msg_to_literal
 
@@ -87,3 +88,35 @@ def test_nonexistent_field_returns_none():
 def test_ros_msg_to_literal_time():
     t = ROSTime(sec=1238124124, nanosec=3029456453)
     assert ros_msg_to_literal(t) is not None
+
+
+def test_std_msgs_float_conversion():
+    float_msg = Float32(data=42.42)
+    literal = ros_msg_to_literal(float_msg)
+    assert isinstance(literal, RdfLiteral)
+    assert literal.datatype == NamedNode(XSD + "float")
+    assert literal.value == "42.42"
+
+
+def test_std_msgs_int_conversion():
+    int_msg = Int32(data=42)
+    literal = ros_msg_to_literal(int_msg)
+    assert isinstance(literal, RdfLiteral)
+    assert literal.datatype == NamedNode(XSD + "integer")
+    assert literal.value == "42"
+
+
+def test_std_msgs_bool_conversion():
+    bool_msg = Bool(data=True)
+    literal = ros_msg_to_literal(bool_msg)
+    assert isinstance(literal, RdfLiteral)
+    assert literal.datatype == NamedNode(XSD + "boolean")
+    assert literal.value == "true"
+
+
+def test_std_msgs_string_conversion():
+    string_msg = String(data="Hello, world!")
+    literal = ros_msg_to_literal(string_msg)
+    assert isinstance(literal, RdfLiteral)
+    assert literal.datatype == NamedNode(XSD + "string")
+    assert literal.value == "Hello, world!"
