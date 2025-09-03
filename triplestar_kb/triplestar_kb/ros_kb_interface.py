@@ -111,29 +111,35 @@ class RosTriplestarKBInterface(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def _create_query_time_subscriptions(self):
-        query_time_subscriptions = yaml.safe_load(
-            self.get_parameter("query_time_subscriptions").value
-        )
-        query_time_tf_subscriptions = yaml.safe_load(
-            self.get_parameter("query_time_tf_subscriptions").value
-        )
+        def load_subscriptions(param_name, log_message):
+            try:
+                param = self.get_parameter(param_name)
+                if param.type_ == rclpy.Parameter.Type.NOT_SET or not param.value:
+                    self.get_logger().info(log_message)
+                    return {}
+                subscriptions = yaml.safe_load(param.value) or {}
+                self.get_logger().info(
+                    f"Loaded subscriptions for '{param_name}': {subscriptions}"
+                )
+                return subscriptions
 
-        self.get_logger().info(
-            f"recieved query time subscriptions: {query_time_subscriptions}"
+            except Exception as e:
+                self.get_logger().warning(
+                    f"Failed to get parameter '{param_name}': {e}"
+                )
+                return {}
+
+        query_time_subscriptions = load_subscriptions(
+            "query_time_subscriptions", "No query time subscriptions specified"
         )
-        self.get_logger().info(
-            f"recieved query time TF subscriptions: {query_time_tf_subscriptions}"
+        query_time_tf_subscriptions = load_subscriptions(
+            "query_time_tf_subscriptions", "No query time TF subscriptions specified"
         )
 
         for name, values in query_time_subscriptions.items():
-            self.get_logger().info(
-                f"Creating query time subscription for {name} on topic {values['topic']}"
-            )
             self.query_time_subs[name] = QueryTimeSubscriber(
                 node=self, topic_name=values["topic"]
             )
-
-        self.get_logger().info("Creating query time TF subscriptions...")
 
         for name, values in query_time_tf_subscriptions.items():
             self.query_time_subs[name] = QueryTimeTFSubscriber(
@@ -188,7 +194,7 @@ class RosTriplestarKBInterface(LifecycleNode):
         self, request: Query.Request, response: Query.Response
     ) -> Query.Response:
         """Handle a query request."""
-        self.get_logger().info(f"Received query request: {request}")
+        self.get_logger().debug(f"Received query request: {request}")
 
         response.result = self.kb.query_json(request.query)
         response.success = response.result != ""

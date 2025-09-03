@@ -163,7 +163,7 @@ class TriplestarKBInterface:
         if not self.store:
             raise RuntimeError("Store not initialized")
 
-        self.logger.info(f"Executing query: {query}")
+        self.logger.debug(f"Executing query: {query}")
 
         try:
             result = self.store.query(query, custom_functions=self.custom_functions)

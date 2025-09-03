@@ -8,7 +8,7 @@ from launch.events import matches_action
 from launch.substitutions import (
     LaunchConfiguration,
 )
-from launch_ros.actions import LifecycleNode
+from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 
@@ -57,11 +57,28 @@ def generate_launch_description():
         )
     )
 
+    marker_publisher_node = Node(
+        package="triplestar_kb",
+        executable="kb_marker_publisher",
+        name="marker_publisher",
+        namespace="triplestar_kb",
+        output="screen",
+    )
+
+    start_marker_publisher = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=triplestar_kb_node,
+            goal_state="active",
+            entities=[marker_publisher_node],
+        )
+    )
+
     return LaunchDescription(
         [
             log_level_arg,
             triplestar_kb_node,
             triplestar_kb_node_config_event,
             triplestar_kb_node_activate_event,
+            start_marker_publisher,
         ]
     )
