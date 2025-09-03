@@ -13,7 +13,6 @@ from geometry_msgs.msg import (
     Vector3,
     Vector3Stamped,
 )
-from icecream import ic
 from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import NamedNode
 from shapely import Point as ShapelyPoint
@@ -159,12 +158,7 @@ def ros_msg_to_literal(msg: Any, field: Optional[str] = None) -> Optional[RdfLit
     if field:
         value = getattr(msg, field, None)
         if value is None:
-            ic(f"Field '{field}' not found in message of type {type(msg)}")
             return None
     else:
         value = msg
     return registry.convert(value)
-
-
-bool = Bool()
-ic(bool)

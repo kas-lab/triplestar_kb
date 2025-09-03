@@ -7,6 +7,25 @@ TriplestarKB is a ROS2-enabled knowledge base, backed by the [oxigraph](https://
 ROS(2) defines its own set of interfaces (messages and services) for representing data like timestamps, points, integers, floats, polygons etc.
 To facilitate the integration of these datatypes into the kb, which is based on RDF, these types need to be converted to suitable RDF types.
 
+
+| ROS msg type                                                                 | Python / Shapely type   | RDF literal type                          |
+|-------------------------------------------------------------------------------|-------------------------|-------------------------------------------|
+| `geometry_msgs/Point`, `Point32`, `PointStamped`                              | `shapely.geometry.Point`| `geo:wktLiteral`                          |
+| `geometry_msgs/Pose`                                                          | `shapely.geometry.Point`| `geo:wktLiteral`                          |
+| `geometry_msgs/Vector3`, `Vector3Stamped`                                     | `shapely.geometry.Point`| `geo:wktLiteral`                          |
+| `geometry_msgs/Polygon`, `PolygonStamped`, `PolygonInstance`, `PolygonInstanceStamped` | `shapely.geometry.Polygon` | `geo:wktLiteral`                      |
+| `builtin_interfaces/Time`                                                     | `datetime.datetime`     | `xsd:dateTime`                            |
+| `float`                                                                       | `float`                 | `xsd:float`                               |
+| `bool`                                                                        | `bool`                  | `xsd:boolean`                             |
+| `int`                                                                         | `int`                   | `xsd:integer`                             |
+| `str`                                                                         | `str`                   | `xsd:string`                              |
+| `std_msgs/Float32`, `Float64`                                                 | `float`                 | `xsd:float`                               |
+| `std_msgs/Int8`, `Int16`, `Int32`, `Int64`                                    | `int`                   | `xsd:integer`                             |
+| `std_msgs/UInt8`, `UInt16`, `UInt32`, `UInt64`                                | `int`                   | `xsd:integer`                             |
+| `std_msgs/Char`, `Byte`                                                       | `int`                   | `xsd:integer`                             |
+| `std_msgs/Bool`                                                               | `bool`                  | `xsd:boolean`                             |
+| `std_msgs/String`                                                             | `str`                   | `xsd:string`                              |
+
 ## Query-time subscribers
 
 Some data, such as room geometries or class hirarchies, will be quite static in your KB, while other data, such as the robots own location or battery level, will change frequently.
