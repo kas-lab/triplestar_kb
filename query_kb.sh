@@ -5,4 +5,8 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-ros2 service call /triplestar_kb/query triplestar_kb_msgs/srv/Query "{query_type: 1, query: '$(< "$1")'}"
+# Call the ROS service and capture the response
+response=$(ros2 service call /triplestar_kb/query triplestar_kb_msgs/srv/Query "{query_type: 1, query: '$(< "$1")'}")
+
+# Extract the JSON from the result field and pretty print it with jq
+echo "$response" | sed -n "s/.*result='\([^']*\)'.*/\1/p" | jq .
