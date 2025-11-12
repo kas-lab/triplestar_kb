@@ -123,9 +123,7 @@ class RDFStarVisualizer:
             legend_rows = []
             for prefix, namespace in sorted_prefixes:
                 escaped_ns = (
-                    namespace.replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
+                    namespace.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                 )
                 legend_rows.append(
                     f'<TR><TD ALIGN="LEFT"><B>{prefix}:</B></TD><TD ALIGN="LEFT">{escaped_ns}</TD></TR>'
@@ -144,9 +142,7 @@ class RDFStarVisualizer:
         """Generate label for literal nodes with optional datatype."""
         if lit.datatype:
             shortened_datatype = self.shorten_uri(str(lit.datatype))
-            escaped_datatype = shortened_datatype.replace("<", "&lt;").replace(
-                ">", "&gt;"
-            )
+            escaped_datatype = shortened_datatype.replace("<", "&lt;").replace(">", "&gt;")
             return f"""<
             <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
                 <TR><TD>"{str(lit.value)}"</TD></TR>
@@ -172,9 +168,7 @@ class RDFStarVisualizer:
         elif isinstance(node, BlankNode):
             self.dot.node(node_id, str(node), **self.styles["blank_node"])
         elif isinstance(node, Literal):
-            self.dot.node(
-                node_id, self.literal_label(node), **self.styles["literal"]
-            )
+            self.dot.node(node_id, self.literal_label(node), **self.styles["literal"])
 
         self._processed_nodes.add(node_id)
         return False
@@ -193,9 +187,7 @@ class RDFStarVisualizer:
 
         # Add the midpoint node with shortened predicate label
         predicate_label = self.shorten_uri(str(quad.predicate))
-        self.dot.node(
-            midpoint_id, xlabel=predicate_label, **self.styles["midpoint"]
-        )
+        self.dot.node(midpoint_id, xlabel=predicate_label, **self.styles["midpoint"])
 
         # Add edges based on whether it's a star triple
         if star_triple:

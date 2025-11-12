@@ -25,9 +25,7 @@ class KBVisualizerNode(Node):
         self._get_store()
 
         # Publishers
-        self.image_pub = self.create_publisher(
-            Image, "~/graph_visualization/image", 10
-        )
+        self.image_pub = self.create_publisher(Image, "~/graph_visualization/image", 10)
 
         self.get_logger().info("Triplestar KB Visualizer node created")
 
@@ -42,9 +40,7 @@ class KBVisualizerNode(Node):
         param = self.get_parameter("store_path")
 
         if param.type_ == rclpy.Parameter.Type.NOT_SET or not param.value:
-            self.get_logger().warning(
-                "store path param not set for visualizer node"
-            )
+            self.get_logger().warning("store path param not set for visualizer node")
             return {}
 
         self.store_path = Path(param.value)
@@ -57,27 +53,21 @@ class KBVisualizerNode(Node):
             self.store = Store.read_only(str(self.store_path))
 
         except Exception as e:
-            self.get_logger().error(
-                f"Failed to access readonly store at {self.store_path}: {e}"
-            )
+            self.get_logger().error(f"Failed to access readonly store at {self.store_path}: {e}")
 
     def generate_and_publish_visualization(self, query: Optional[str] = None):
         if not self.store:
             self.get_logger().warn("No store available for visualiztion")
             return
 
-        image_data = self.visualizer.generate_visualization(
-            store=self.store, query=query
-        )
+        image_data = self.visualizer.generate_visualization(store=self.store, query=query)
 
         if image_data:
             try:
                 import tempfile
 
                 # temporary file
-                with tempfile.NamedTemporaryFile(
-                    suffix=".png", delete=False
-                ) as temp_file:
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
                     temp_file.write(image_data)
                     temp_path = temp_file.name
 
@@ -101,9 +91,7 @@ class KBVisualizerNode(Node):
                 self.image_pub.publish(msg)
                 self.get_logger().info("Published visualization")
             except Exception as e:
-                self.get_logger().error(
-                    f"Failed to convert and publish image: {e}"
-                )
+                self.get_logger().error(f"Failed to convert and publish image: {e}")
 
 
 def main(args=None):
