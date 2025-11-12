@@ -18,9 +18,7 @@ class PolygonPublisher(Node):
 
         self.timer = self.create_timer(1.0, self.publish_polygons)  # 1 Hz
         self.time_timer = self.create_timer(1.0, self.publish_time)  # 1 Hz
-        self.battery_timer = self.create_timer(
-            1.0, self.publish_battery_level
-        )  # 0.2 Hz
+        self.battery_timer = self.create_timer(1.0, self.publish_battery_level)  # 0.2 Hz
         self.location_timer = self.create_timer(2.0, self.publish_location)
 
     def publish_polygons(self):

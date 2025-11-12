@@ -48,20 +48,10 @@ def generate_launch_description():
         )
     )
 
-    triplestar_kb_node_activate_event = RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=triplestar_kb_node,
-            goal_state="inactive",
-            entities=[
-                EmitEvent(
-                    event=ChangeState(
-                        lifecycle_node_matcher=matches_action(
-                            triplestar_kb_node
-                        ),
-                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,  # type: ignore
-                    )
-                )
-            ],
+    triplestar_kb_node_activate_event = EmitEvent(
+        event=ChangeState(
+            lifecycle_node_matcher=matches_action(triplestar_kb_node),
+            transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,  # type: ignore
         )
     )
 
@@ -69,7 +59,20 @@ def generate_launch_description():
         package="triplestar_kb",
         executable="kb_marker_publisher",
         name="marker_publisher",
+        namespace="",
+        output="screen",
+    )
+
+    viz_node = Node(
+        package="triplestar_kb_viz",
+        executable="kb_visualizer_node",
+        name="visualizer_node",
         namespace="triplestar_kb",
+        parameters=[
+            {
+                "store_path": "/tmp/triplestar_kb"  # Add this line
+            }
+        ],
         output="screen",
     )
 
@@ -88,5 +91,6 @@ def generate_launch_description():
             triplestar_kb_node_config_event,
             triplestar_kb_node_activate_event,
             start_marker_publisher,
+            viz_node,
         ]
     )
