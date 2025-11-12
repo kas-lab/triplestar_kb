@@ -73,6 +73,9 @@ class RDFStarVisualizer:
             prefixes: Custom prefixes dictionary (namespace -> prefix)
             show_legend: Whether to show a legend with used prefixes
         """
+        self.comment = comment
+        self.format = format
+        self.engine = engine
         self.dot = Digraph(comment=comment, format=format, engine=engine)
         self.styles = styles or self.DEFAULT_STYLES.copy()
         self._processed_nodes = set()
@@ -85,6 +88,14 @@ class RDFStarVisualizer:
         # Track used prefixes for legend
         self.used_prefixes = set()
         self.show_legend = show_legend
+
+    def _reset_graph(self) -> None:
+        """Reset the graph and all tracking variables for a fresh visualization."""
+        self.dot = Digraph(
+            comment=self.comment, format=self.format, engine=self.engine
+        )
+        self._processed_nodes = set()
+        self.used_prefixes = set()
 
     def safe_id(self, value: Union[str, Any]) -> str:
         """Generate a safe node ID from any value."""
@@ -123,7 +134,9 @@ class RDFStarVisualizer:
             legend_rows = []
             for prefix, namespace in sorted_prefixes:
                 escaped_ns = (
-                    namespace.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    namespace.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
                 )
                 legend_rows.append(
                     f'<TR><TD ALIGN="LEFT"><B>{prefix}:</B></TD><TD ALIGN="LEFT">{escaped_ns}</TD></TR>'
@@ -142,7 +155,9 @@ class RDFStarVisualizer:
         """Generate label for literal nodes with optional datatype."""
         if lit.datatype:
             shortened_datatype = self.shorten_uri(str(lit.datatype))
-            escaped_datatype = shortened_datatype.replace("<", "&lt;").replace(">", "&gt;")
+            escaped_datatype = shortened_datatype.replace("<", "&lt;").replace(
+                ">", "&gt;"
+            )
             return f"""<
             <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
                 <TR><TD>"{str(lit.value)}"</TD></TR>
@@ -168,7 +183,9 @@ class RDFStarVisualizer:
         elif isinstance(node, BlankNode):
             self.dot.node(node_id, str(node), **self.styles["blank_node"])
         elif isinstance(node, Literal):
-            self.dot.node(node_id, self.literal_label(node), **self.styles["literal"])
+            self.dot.node(
+                node_id, self.literal_label(node), **self.styles["literal"]
+            )
 
         self._processed_nodes.add(node_id)
         return False
@@ -187,7 +204,9 @@ class RDFStarVisualizer:
 
         # Add the midpoint node with shortened predicate label
         predicate_label = self.shorten_uri(str(quad.predicate))
-        self.dot.node(midpoint_id, xlabel=predicate_label, **self.styles["midpoint"])
+        self.dot.node(
+            midpoint_id, xlabel=predicate_label, **self.styles["midpoint"]
+        )
 
         # Add edges based on whether it's a star triple
         if star_triple:
@@ -217,6 +236,9 @@ class RDFStarVisualizer:
         store: Store,  # Use a read-only pyoxigraph store
         query: Optional[str] = None,
     ) -> Optional[bytes]:
+        # Reset the graph and rebuild from scratch
+        self._reset_graph()
+
         if query:
             # Execute CONSTRUCT query through the interface
             results = store.query(query)
@@ -229,6 +251,9 @@ class RDFStarVisualizer:
             # Add all quads from the shared store
             for quad in store:
                 self.add_quad(quad)
+
+        # Add legend if needed
+        self.add_legend()
 
         # Render and return bytes
         return self.dot.pipe()
