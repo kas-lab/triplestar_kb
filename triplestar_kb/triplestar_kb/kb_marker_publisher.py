@@ -26,7 +26,6 @@ class KBPolygonViz(Node):
             self.get_logger().warn("Waiting for /triplestar_kb/query service...")
 
         request = Query.Request()
-        request.query_type = 1
         request.query = sparql
 
         self.get_logger().debug(f"Sending SPARQL query:\n{sparql}")
