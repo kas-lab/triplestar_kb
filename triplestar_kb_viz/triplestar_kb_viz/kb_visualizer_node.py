@@ -9,7 +9,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from triplestar_kb_msgs.srv import SetVizQuery
 
-from .kb_visualizer import RDFStarVisualizer
+from triplestar_kb_viz.kb_visualizer import RDFStarVisualizer
 
 
 class KBVisualizerNode(Node):
@@ -32,9 +32,7 @@ class KBVisualizerNode(Node):
         self._get_store()
 
         # Publishers
-        self.image_pub = self.create_publisher(
-            Image, "~/graph_visualization/image", 10
-        )
+        self.image_pub = self.create_publisher(Image, "~/graph_visualization/image", 10)
 
         # Services
         self.set_viz_query_srv = self.create_service(
@@ -54,14 +52,10 @@ class KBVisualizerNode(Node):
         if self.auto_refresh and self.update_rate > 0:
             self.timer = self.create_timer(
                 self.update_rate,
-                lambda: self.generate_and_publish_visualization(
-                    self.current_query
-                ),
+                lambda: self.generate_and_publish_visualization(self.current_query),
             )
 
-    def _handle_set_viz_query(
-        self, request: SetVizQuery.Request, response: SetVizQuery.Response
-    ):
+    def _handle_set_viz_query(self, request: SetVizQuery.Request, response: SetVizQuery.Response):
         """Handle SetVizQuery service requests."""
         try:
             # Validate query - now allow empty query to visualize entire store
@@ -86,9 +80,6 @@ class KBVisualizerNode(Node):
             self._create_visualization_timer()
 
             response.success = True
-            query_status = (
-                "entire store" if self.current_query is None else "custom query"
-            )
             response.message = f"Visualization query updated. Visualizing: {self.current_query}, Auto-refresh: {self.auto_refresh}, Update rate: {self.update_rate}s"
             self.get_logger().info(response.message)
 
@@ -106,9 +97,7 @@ class KBVisualizerNode(Node):
         param = self.get_parameter("store_path")
 
         if param.type_ == rclpy.Parameter.Type.NOT_SET or not param.value:
-            self.get_logger().warning(
-                "store path param not set for visualizer node"
-            )
+            self.get_logger().warning("store path param not set for visualizer node")
             return {}
 
         self.store_path = Path(param.value)
@@ -121,27 +110,21 @@ class KBVisualizerNode(Node):
             self.store = Store.read_only(str(self.store_path))
 
         except Exception as e:
-            self.get_logger().error(
-                f"Failed to access readonly store at {self.store_path}: {e}"
-            )
+            self.get_logger().error(f"Failed to access readonly store at {self.store_path}: {e}")
 
     def generate_and_publish_visualization(self, query: Optional[str] = None):
         if not self.store:
             self.get_logger().warn("No store available for visualiztion")
             return
 
-        image_data = self.visualizer.generate_visualization(
-            store=self.store, query=query
-        )
+        image_data = self.visualizer.generate_visualization(store=self.store, query=query)
 
         if image_data:
             try:
                 import tempfile
 
                 # temporary file
-                with tempfile.NamedTemporaryFile(
-                    suffix=".png", delete=False
-                ) as temp_file:
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
                     temp_file.write(image_data)
                     temp_path = temp_file.name
 
@@ -163,16 +146,10 @@ class KBVisualizerNode(Node):
                 msg.data = data
 
                 self.image_pub.publish(msg)
-                query_status = (
-                    "entire store" if query is None else "query result"
-                )
-                self.get_logger().info(
-                    f"Published visualization of {query_status}"
-                )
+                query_status = "entire store" if query is None else "query result"
+                self.get_logger().info(f"Published visualization of {query_status}")
             except Exception as e:
-                self.get_logger().error(
-                    f"Failed to convert and publish image: {e}"
-                )
+                self.get_logger().error(f"Failed to convert and publish image: {e}")
 
 
 def main(args=None):
