@@ -190,11 +190,11 @@ class RDFStarVisualizer:
         self._processed_nodes.add(node_id)
         return False
 
-    def add_quad(self, quad: Quad) -> None:
+    def add_quad(self, quad: Quad | Triple) -> None:
         """Add a single quad to the visualization."""
         # Generate IDs
         subject_id = self.safe_id(str(quad.subject))
-        midpoint_id = self.safe_id(str(quad.triple))
+        midpoint_id = self.safe_id(str(quad))
         object_id = self.safe_id(str(quad.object))
 
         # Check if this involves star triples
@@ -245,8 +245,8 @@ class RDFStarVisualizer:
             if not hasattr(results, "__iter__"):
                 raise TypeError("Query results must be iterable")
 
-            for quad in results:
-                self.add_quad(quad)
+            for triple in results:
+                self.add_quad(triple)
         else:
             # Add all quads from the shared store
             for quad in store:
