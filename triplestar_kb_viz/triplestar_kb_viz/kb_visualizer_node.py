@@ -43,23 +43,34 @@ class KBVisualizerNode(Node):
     def _create_visualization_timer(self):
         """Create or recreate the visualization timer with current update rate."""
         if self.timer is not None:
+            self.get_logger().info("Destroying existing visualization timer")
             self.destroy_timer(self.timer)
 
         if self.update_rate is not None and self.update_rate > 0:
+            self.get_logger().info(f"Creating timer with update rate: {self.update_rate}s")
             self.timer = self.create_timer(
                 self.update_rate,
                 lambda: self.generate_and_publish_visualization(self.current_query),
             )
+            self.get_logger().info("Timer created successfully")
+        else:
+            self.get_logger().info("No timer created (update_rate is None or <= 0)")
 
     def _handle_set_viz_query(self, request: SetVizQuery.Request, response: SetVizQuery.Response):
         """Handle SetVizQuery service requests."""
+        self.get_logger().info("=== SetVizQuery service called ===")
+        self.get_logger().info(f"Received query (length: {len(request.query) if request.query else 0})")
+        self.get_logger().info(f"Received update_rate: {request.update_rate}")
+
         try:
             # Validate query - now allow empty query to visualize entire store
             if request.query is None or request.query.strip() == "":
                 # Empty query means visualize entire store
                 self.current_query = None
+                self.get_logger().info("Empty query received - will visualize entire store")
             else:
                 self.current_query = request.query
+                self.get_logger().info(f"Query set to: {self.current_query[:100]}...")  # Log first 100 chars
 
             # Update configuration
             # If update_rate is not set (0 or negative), use default of 1 Hz
@@ -68,23 +79,28 @@ class KBVisualizerNode(Node):
             else:
                 self.update_rate = 1.0
 
-            # Default to True if auto_refresh not explicitly set
-            self.auto_refresh = request.auto_refresh
+            self.get_logger().info(f"Update rate set to: {self.update_rate}s")
 
             # Recreate timer with new settings
+            self.get_logger().info("Creating visualization timer...")
             self._create_visualization_timer()
 
             response.success = True
-            response.message = f"Visualization query updated. Visualizing: {self.current_query}, Auto-refresh: {self.auto_refresh}, Update rate: {self.update_rate}s"
+            response.message = f"Visualization query updated. Update rate: {self.update_rate}s"
             self.get_logger().info(response.message)
 
             # Publish visualization immediately with new query
+            self.get_logger().info("Publishing visualization immediately...")
             self.generate_and_publish_visualization(self.current_query)
+            self.get_logger().info("=== SetVizQuery service completed successfully ===")
 
         except Exception as e:
             response.success = False
             response.message = f"Error updating query: {str(e)}"
+            self.get_logger().error(f"=== SetVizQuery service FAILED ===")
             self.get_logger().error(response.message)
+            import traceback
+            self.get_logger().error(f"Traceback: {traceback.format_exc()}")
 
         return response
 
@@ -108,11 +124,24 @@ class KBVisualizerNode(Node):
             self.get_logger().error(f"Failed to access readonly store at {self.store_path}: {e}")
 
     def generate_and_publish_visualization(self, query: Optional[str] = None):
+        self.get_logger().info("--- Generating visualization ---")
+
         if not self.store:
-            self.get_logger().warn("No store available for visualiztion")
+            self.get_logger().warn("No store available for visualization")
             return
 
-        image_data = self.visualizer.generate_visualization(store=self.store, query=query)
+        self.get_logger().info(f"Store path: {self.store_path}")
+        query_status = "entire store" if query is None else "custom query"
+        self.get_logger().info(f"Visualizing: {query_status}")
+
+        try:
+            image_data = self.visualizer.generate_visualization(store=self.store, query=query)
+            self.get_logger().info(f"Generated image data: {len(image_data) if image_data else 0} bytes")
+        except Exception as e:
+            self.get_logger().error(f"Failed to generate visualization: {e}")
+            import traceback
+            self.get_logger().error(f"Traceback: {traceback.format_exc()}")
+            return
 
         if image_data:
             try:
@@ -141,10 +170,13 @@ class KBVisualizerNode(Node):
                 msg.data = data
 
                 self.image_pub.publish(msg)
-                query_status = "entire store" if query is None else "query result"
-                self.get_logger().info(f"Published visualization of {query_status}")
+                self.get_logger().info(f"Published visualization of {query_status} ({width}x{height})")
             except Exception as e:
                 self.get_logger().error(f"Failed to convert and publish image: {e}")
+                import traceback
+                self.get_logger().error(f"Traceback: {traceback.format_exc()}")
+        else:
+            self.get_logger().warn("No image data generated")
 
 
 def main(args=None):
