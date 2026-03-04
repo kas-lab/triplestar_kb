@@ -34,9 +34,9 @@ from std_msgs.msg import (
     UInt64,
 )
 
-GEO = "http://www.opengis.net/ont/geosparql#"
-XSD = "http://www.w3.org/2001/XMLSchema#"
-RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+GEO = 'http://www.opengis.net/ont/geosparql#'
+XSD = 'http://www.w3.org/2001/XMLSchema#'
+RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 
 
 class RosToRdfLiteralConverterRegistry:
@@ -66,36 +66,36 @@ registry = RosToRdfLiteralConverterRegistry()
 
 @registry.register(Point, Point32, PointStamped)
 def convert_point(point) -> RdfLiteral:
-    if hasattr(point, "header"):
+    if hasattr(point, 'header'):
         point = point.point
-    shapely_point = ShapelyPoint(point.x, point.y)
-    return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + "wktLiteral"))
+    shapely_point = ShapelyPoint(point.x, point.y, point.z)
+    return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
 @registry.register(Pose)
 def convert_pose(pose) -> RdfLiteral:
-    shapely_point = ShapelyPoint(pose.position.x, pose.position.y)
-    return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + "wktLiteral"))
+    shapely_point = ShapelyPoint(pose.position.x, pose.position.y, pose.position.z)
+    return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
 @registry.register(Vector3, Vector3Stamped)
 def convert_vector3(vector) -> RdfLiteral:
-    shapely_point = ShapelyPoint(vector.x, vector.y)
-    return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + "wktLiteral"))
+    shapely_point = ShapelyPoint(vector.x, vector.y, vector.z)
+    return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
 @registry.register(Polygon, PolygonStamped, PolygonInstance, PolygonInstanceStamped)
 def convert_polygon(polygon) -> RdfLiteral:
-    if hasattr(polygon, "header"):
+    if hasattr(polygon, 'header'):
         polygon = polygon.polygon
-    if hasattr(polygon, "id"):
+    if hasattr(polygon, 'id'):
         polygon = polygon.polygon
     if not polygon.points:
         shp = ShapelyPolygon()
     else:
         coords = [(p.x, p.y) for p in polygon.points]
         shp = ShapelyPolygon(coords)
-    return RdfLiteral(shp.wkt, datatype=NamedNode(GEO + "wktLiteral"))
+    return RdfLiteral(shp.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
 @registry.register(ROSTime)
@@ -104,34 +104,34 @@ def convert_time(ros_time: ROSTime) -> RdfLiteral:
 
     dt = datetime.fromtimestamp(ros_time.sec + ros_time.nanosec / 1e9, tz=timezone.utc)
     return RdfLiteral(
-        dt.isoformat().replace("+00:00", "Z"),
-        datatype=NamedNode(XSD + "dateTime"),
+        dt.isoformat().replace('+00:00', 'Z'),
+        datatype=NamedNode(XSD + 'dateTime'),
     )
 
 
 # Built in datatypes
 @registry.register(float)
 def convert_float(value: float) -> RdfLiteral:
-    datatype = NamedNode(XSD + "float")
+    datatype = NamedNode(XSD + 'float')
     return RdfLiteral(str(value), datatype=datatype)
 
 
 # must come before int, because bool is a subclass of int
 @registry.register(bool)
 def convert_bool(value: bool) -> RdfLiteral:
-    datatype = NamedNode(XSD + "boolean")
+    datatype = NamedNode(XSD + 'boolean')
     return RdfLiteral(str(value).lower(), datatype=datatype)
 
 
 @registry.register(int)
 def convert_int(value: int) -> RdfLiteral:
-    datatype = NamedNode(XSD + "integer")
+    datatype = NamedNode(XSD + 'integer')
     return RdfLiteral(str(value), datatype=datatype)
 
 
 @registry.register(str)
 def convert_str(value: str) -> RdfLiteral:
-    datatype = NamedNode(XSD + "string")
+    datatype = NamedNode(XSD + 'string')
     return RdfLiteral(value, datatype=datatype)
 
 

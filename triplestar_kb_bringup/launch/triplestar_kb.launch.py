@@ -19,26 +19,26 @@ from launch_ros.events.lifecycle import ChangeState
 
 def generate_launch_description():
     log_level_arg = DeclareLaunchArgument(
-        "log-level",
-        default_value="info",
-        description="Logging level",
+        'log-level',
+        default_value='info',
+        description='Logging level',
     )
-    log_level = LaunchConfiguration("log-level", default="info")
+    log_level = LaunchConfiguration('log-level', default='info')
 
     config = os.path.join(
-        get_package_share_directory("triplestar_kb_bringup"),
-        "config",
-        "kb_params.yaml",
+        get_package_share_directory('triplestar_kb_bringup'),
+        'config',
+        'kb_params.yaml',
     )
 
     triplestar_kb_node = LifecycleNode(
-        package="triplestar_kb",
-        executable="kb_node",
-        name="triplestar_kb",
-        namespace="",
-        output="screen",
+        package='triplestar_kb',
+        executable='kb_node',
+        name='triplestar_kb',
+        namespace='',
+        output='screen',
         parameters=[config],
-        arguments=["--ros-args", "--log-level", ["triplestar_kb:=", log_level]],
+        arguments=['--ros-args', '--log-level', ['triplestar_kb:=', log_level]],
     )
 
     triplestar_kb_node_config_event = EmitEvent(
@@ -56,30 +56,30 @@ def generate_launch_description():
     )
 
     marker_publisher_node = Node(
-        package="triplestar_kb",
-        executable="kb_marker_publisher",
-        name="marker_publisher",
-        namespace="",
-        output="screen",
+        package='triplestar_kb',
+        executable='kb_marker_publisher',
+        name='marker_publisher',
+        namespace='',
+        output='screen',
     )
 
     viz_node = Node(
-        package="triplestar_kb_viz",
-        executable="kb_visualizer_node",
-        name="visualizer_node",
-        namespace="triplestar_kb",
+        package='triplestar_kb_viz',
+        executable='kb_visualizer_node',
+        name='visualizer_node',
+        namespace='triplestar_kb',
         parameters=[
             {
-                "store_path": "/tmp/triplestar_kb"  # Add this line
+                'store_path': '/tmp/triplestar_kb'  # Add this line
             }
         ],
-        output="screen",
+        output='screen',
     )
 
     start_marker_publisher = RegisterEventHandler(
         OnStateTransition(
             target_lifecycle_node=triplestar_kb_node,
-            goal_state="active",
+            goal_state='active',
             entities=[marker_publisher_node],
         )
     )

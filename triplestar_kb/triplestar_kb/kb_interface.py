@@ -7,36 +7,36 @@ from pyoxigraph import NamedNode, QueryResultsFormat, RdfFormat, Store
 class TriplestarKBInterface:
     def __init__(self, store_path: Optional[Path] = None, logger=None):
         if logger is None:
-            raise ValueError("logger must be provided")
-        self.logger = logger.get_child("KBInterface")
-        self.logger.info("Initializing TriplestarKBInterface")
+            raise ValueError('logger must be provided')
+        self.logger = logger.get_child('KBInterface')
+        self.logger.info('Initializing TriplestarKBInterface')
         self.store_path = store_path
         self._initialize_store()
         self.custom_functions: dict[NamedNode, Callable] = {}
 
     def _add_custom_function(self, function_uri: NamedNode, function: Callable):
         self.custom_functions[function_uri] = function
-        self.logger.info(f"Added custom function for {function_uri}")
+        self.logger.info(f'Added custom function for {function_uri}')
 
     def _initialize_store(self):
         if self.store_path is None:
             self.store = Store()
-            self.logger.info("Initialized in-memory store")
+            self.logger.info('Initialized in-memory store')
         else:
             try:
                 if self.store_path.exists():
                     self.logger.info(
-                        f"Store path {self.store_path} already exists. Loading existing store."
+                        f'Store path {self.store_path} already exists. Loading existing store.'
                     )
                 else:
                     self.logger.info(
-                        f"Store path {self.store_path} does not exist. Creating new store."
+                        f'Store path {self.store_path} does not exist. Creating new store.'
                     )
                 self.store = Store(self.store_path)
-                self.logger.info(f"Initialized store at {self.store_path}")
-                self.logger.info(f"{self.count_triples()} triples present")
+                self.logger.info(f'Initialized store at {self.store_path}')
+                self.logger.info(f'{self.count_triples()} triples present')
             except Exception as e:
-                self.logger.error(f"Failed to initialize store at {self.store_path}: {e}")
+                self.logger.error(f'Failed to initialize store at {self.store_path}: {e}')
                 raise
 
     def load_file(self, file_path: Path, format: RdfFormat = RdfFormat.TURTLE) -> bool:
@@ -51,18 +51,18 @@ class TriplestarKBInterface:
             True if successful, False otherwise
         """
         if self.store is None:
-            raise RuntimeError("Store not initialized")
+            raise RuntimeError('Store not initialized')
 
         if not file_path.exists():
             return False
 
         try:
-            with file_path.open("r", encoding="utf-8") as file:
+            with file_path.open('r', encoding='utf-8') as file:
                 self.store.load(input=file, format=format)
-            self.logger.info(f"Loaded file {file_path}")
+            self.logger.info(f'Loaded file {file_path}')
             return True
         except Exception as e:
-            self.logger.error(f"Failed to load file {file_path}: {e}")
+            self.logger.error(f'Failed to load file {file_path}: {e}')
             return False
 
     def load_files(self, file_paths: List[Path], format: RdfFormat = RdfFormat.TURTLE) -> int:
@@ -83,7 +83,7 @@ class TriplestarKBInterface:
                 loaded_count += 1
             else:
                 failed_count += 1
-        self.logger.info(f"Loaded {loaded_count} files, failed to load {failed_count} files")
+        self.logger.info(f'Loaded {loaded_count} files, failed to load {failed_count} files')
         return loaded_count
 
     def count_triples(self) -> int:
@@ -94,16 +94,16 @@ class TriplestarKBInterface:
             Number of triples
         """
         if self.store is None:
-            raise RuntimeError("Store not initialized")
+            raise RuntimeError('Store not initialized')
 
         try:
-            query = "SELECT (COUNT(*) AS ?count) WHERE {?s ?p ?o}"
+            query = 'SELECT (COUNT(*) AS ?count) WHERE {?s ?p ?o}'
             query_result = self.store.query(query)
-            if hasattr(query_result, "__next__"):
+            if hasattr(query_result, '__next__'):
                 result = next(query_result)
             else:
-                raise RuntimeError("Query result does not support iteration")
-            return result["count"].value
+                raise RuntimeError('Query result does not support iteration')
+            return result['count'].value
         except Exception:
             return 0
 
@@ -115,11 +115,11 @@ class TriplestarKBInterface:
             True if successful, False otherwise
         """
         if not self.store:
-            raise RuntimeError("Store not initialized")
+            raise RuntimeError('Store not initialized')
 
         try:
             # Clear all named graphs and the default graph
-            self.store.update("CLEAR ALL")
+            self.store.update('CLEAR ALL')
             return True
         except Exception:
             return False
@@ -139,14 +139,14 @@ class TriplestarKBInterface:
             True if successful, False otherwise
         """
         if not self.store:
-            raise RuntimeError("Store not initialized")
+            raise RuntimeError('Store not initialized')
 
         try:
             self.store.optimize()
             return True
         except OSError as e:
             self.logger.error(
-                f"Failed to optimize store: {e}",
+                f'Failed to optimize store: {e}',
             )
             return False
 
@@ -161,15 +161,15 @@ class TriplestarKBInterface:
             A JSON string containing the query results, or an empty string if an error occurs.
         """
         if not self.store:
-            raise RuntimeError("Store not initialized")
+            raise RuntimeError('Store not initialized')
 
-        self.logger.debug(f"Executing query: {query}")
+        self.logger.debug(f'Executing query: {query}')
 
         try:
             result = self.store.query(query, custom_functions=self.custom_functions)
             result_json = result.serialize(format=QueryResultsFormat.JSON)  # type:ignore
-            return result_json.decode("utf-8")  # type:ignore
+            return result_json.decode('utf-8')  # type:ignore
         except Exception as e:
-            self.logger.error(f"Query execution failed: {e}")
+            self.logger.error(f'Query execution failed: {e}')
 
-        return ""
+        return ''

@@ -9,12 +9,12 @@ from std_msgs.msg import Float32
 
 class PolygonPublisher(Node):
     def __init__(self):
-        super().__init__("polygon_publisher")
+        super().__init__('polygon_publisher')
 
-        self.polygon_publisher_ = self.create_publisher(Polygon, "/polygons", 10)
-        self.time_publisher_ = self.create_publisher(Time, "/time", 10)
-        self.battery_publisher_ = self.create_publisher(Float32, "/battery_level", 10)
-        self.location_publisher_ = self.create_publisher(Point32, "/robot_pose", 10)
+        self.polygon_publisher_ = self.create_publisher(Polygon, '/polygons', 10)
+        self.time_publisher_ = self.create_publisher(Time, '/time', 10)
+        self.battery_publisher_ = self.create_publisher(Float32, '/battery_level', 10)
+        self.location_publisher_ = self.create_publisher(Point32, '/robot_pose', 10)
 
         self.timer = self.create_timer(1.0, self.publish_polygons)  # 1 Hz
         self.time_timer = self.create_timer(1.0, self.publish_time)  # 1 Hz
@@ -67,5 +67,5 @@ def main(args=None):
         rclpy.shutdown()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

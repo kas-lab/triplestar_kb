@@ -10,55 +10,55 @@ class RDFStarVisualizer:
 
     # Standard prefixes commonly used in RDF
     STANDARD_PREFIXES = {
-        "http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf",
-        "http://www.w3.org/2000/01/rdf-schema#": "rdfs",
-        "http://www.w3.org/2001/XMLSchema#": "xsd",
-        "http://www.w3.org/2002/07/owl#": "owl",
-        "http://xmlns.com/foaf/0.1/": "foaf",
-        "http://purl.org/dc/elements/1.1/": "dc",
-        "http://purl.org/dc/terms/": "dcterms",
-        "http://www.w3.org/2004/02/skos/core#": "skos",
-        "http://www.opengis.net/ont/geosparql#": "geo",
-        "http://example.org/": "ex",
+        'http://www.w3.org/1999/02/22-rdf-syntax-ns#': 'rdf',
+        'http://www.w3.org/2000/01/rdf-schema#': 'rdfs',
+        'http://www.w3.org/2001/XMLSchema#': 'xsd',
+        'http://www.w3.org/2002/07/owl#': 'owl',
+        'http://xmlns.com/foaf/0.1/': 'foaf',
+        'http://purl.org/dc/elements/1.1/': 'dc',
+        'http://purl.org/dc/terms/': 'dcterms',
+        'http://www.w3.org/2004/02/skos/core#': 'skos',
+        'http://www.opengis.net/ont/geosparql#': 'geo',
+        'http://example.org/': 'ex',
     }
 
     # Default style dictionaries for different node types
     DEFAULT_STYLES = {
-        "named_node": {
-            "shape": "ellipse",
-            "style": "filled",
-            "fillcolor": "lightblue",
-            "fontname": "Arial",
-            "fontsize": "12",
+        'named_node': {
+            'shape': 'ellipse',
+            'style': 'filled',
+            'fillcolor': 'lightblue',
+            'fontname': 'Arial',
+            'fontsize': '12',
         },
-        "literal": {
-            "shape": "box",
-            "style": "rounded,filled",
-            "fillcolor": "lightgreen",
-            "fontname": "Arial",
-            "fontsize": "10",
+        'literal': {
+            'shape': 'box',
+            'style': 'rounded,filled',
+            'fillcolor': 'lightgreen',
+            'fontname': 'Arial',
+            'fontsize': '10',
         },
-        "blank_node": {
-            "shape": "diamond",
-            "style": "filled",
-            "fillcolor": "lightgray",
-            "fontname": "Arial",
-            "fontsize": "10",
+        'blank_node': {
+            'shape': 'diamond',
+            'style': 'filled',
+            'fillcolor': 'lightgray',
+            'fontname': 'Arial',
+            'fontsize': '10',
         },
-        "midpoint": {
-            "shape": "point",
-            "width": "0",
-            "height": "0",
-            "label": "",
-            "fontsize": "8",
+        'midpoint': {
+            'shape': 'point',
+            'width': '0',
+            'height': '0',
+            'label': '',
+            'fontsize': '8',
         },
     }
 
     def __init__(
         self,
-        comment: str = "RDF-star Graph",
-        format: str = "PNG",
-        engine: str = "sfdp",
+        comment: str = 'RDF-star Graph',
+        format: str = 'PNG',
+        engine: str = 'sfdp',
         styles: Optional[Dict[str, Dict[str, Any]]] = None,
         prefixes: Optional[Dict[str, str]] = None,
         show_legend: bool = True,
@@ -91,29 +91,27 @@ class RDFStarVisualizer:
 
     def _reset_graph(self) -> None:
         """Reset the graph and all tracking variables for a fresh visualization."""
-        self.dot = Digraph(
-            comment=self.comment, format=self.format, engine=self.engine
-        )
+        self.dot = Digraph(comment=self.comment, format=self.format, engine=self.engine)
         self._processed_nodes = set()
         self.used_prefixes = set()
 
     def safe_id(self, value: Union[str, Any]) -> str:
         """Generate a safe node ID from any value."""
-        return "n" + hashlib.sha1(str(value).encode("utf-8")).hexdigest()
+        return 'n' + hashlib.sha1(str(value).encode('utf-8')).hexdigest()
 
     def shorten_uri(self, uri: str) -> str:
         """Shorten a URI using known prefixes."""
         uri_str = str(uri)
 
         # Remove angle brackets if present
-        if uri_str.startswith("<") and uri_str.endswith(">"):
+        if uri_str.startswith('<') and uri_str.endswith('>'):
             uri_str = uri_str[1:-1]
 
         # Try to find a matching prefix
         for namespace, prefix in self.prefixes.items():
             if uri_str.startswith(namespace):
                 self.used_prefixes.add((prefix, namespace))
-                return uri_str.replace(namespace, f"{prefix}:", 1)
+                return uri_str.replace(namespace, f'{prefix}:', 1)
 
         return uri_str
 
@@ -123,9 +121,9 @@ class RDFStarVisualizer:
             return
 
         # Create legend subgraph
-        with self.dot.subgraph(name="cluster_legend") as legend:
-            legend.attr(label="Prefixes", fontsize="14", fontname="Arial Bold")
-            legend.attr(style="filled", fillcolor="white", color="black")
+        with self.dot.subgraph(name='cluster_legend') as legend:
+            legend.attr(label='Prefixes', fontsize='14', fontname='Arial Bold')
+            legend.attr(style='filled', fillcolor='white', color='black')
 
             # Sort prefixes for consistent display
             sorted_prefixes = sorted(self.used_prefixes)
@@ -134,9 +132,7 @@ class RDFStarVisualizer:
             legend_rows = []
             for prefix, namespace in sorted_prefixes:
                 escaped_ns = (
-                    namespace.replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
+                    namespace.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
                 )
                 legend_rows.append(
                     f'<TR><TD ALIGN="LEFT"><B>{prefix}:</B></TD><TD ALIGN="LEFT">{escaped_ns}</TD></TR>'
@@ -145,19 +141,17 @@ class RDFStarVisualizer:
             legend_html = f"""<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
                 <TR><TD COLSPAN="2"><B>Prefixes</B></TD></TR>
-                {"".join(legend_rows)}
+                {''.join(legend_rows)}
             </TABLE>
             >"""
 
-            legend.node("legend_content", legend_html, shape="none", margin="0")
+            legend.node('legend_content', legend_html, shape='none', margin='0')
 
     def literal_label(self, lit: Literal) -> str:
         """Generate label for literal nodes with optional datatype."""
         if lit.datatype:
             shortened_datatype = self.shorten_uri(str(lit.datatype))
-            escaped_datatype = shortened_datatype.replace("<", "&lt;").replace(
-                ">", "&gt;"
-            )
+            escaped_datatype = shortened_datatype.replace('<', '&lt;').replace('>', '&gt;')
             return f"""<
             <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
                 <TR><TD>"{str(lit.value)}"</TD></TR>
@@ -179,13 +173,11 @@ class RDFStarVisualizer:
             return True
         elif isinstance(node, NamedNode):
             shortened_label = self.shorten_uri(str(node))
-            self.dot.node(node_id, shortened_label, **self.styles["named_node"])
+            self.dot.node(node_id, shortened_label, **self.styles['named_node'])
         elif isinstance(node, BlankNode):
-            self.dot.node(node_id, str(node), **self.styles["blank_node"])
+            self.dot.node(node_id, str(node), **self.styles['blank_node'])
         elif isinstance(node, Literal):
-            self.dot.node(
-                node_id, self.literal_label(node), **self.styles["literal"]
-            )
+            self.dot.node(node_id, self.literal_label(node), **self.styles['literal'])
 
         self._processed_nodes.add(node_id)
         return False
@@ -204,22 +196,20 @@ class RDFStarVisualizer:
 
         # Add the midpoint node with shortened predicate label
         predicate_label = self.shorten_uri(str(quad.predicate))
-        self.dot.node(
-            midpoint_id, xlabel=predicate_label, **self.styles["midpoint"]
-        )
+        self.dot.node(midpoint_id, xlabel=predicate_label, **self.styles['midpoint'])
 
         # Add edges based on whether it's a star triple
         if star_triple:
             self.dot.edge(
                 subject_id,
                 midpoint_id,
-                arrowhead="none",
-                style="dashed",
-                color="gray",
+                arrowhead='none',
+                style='dashed',
+                color='gray',
             )
-            self.dot.edge(midpoint_id, object_id, style="dashed", color="gray")
+            self.dot.edge(midpoint_id, object_id, style='dashed', color='gray')
         else:
-            self.dot.edge(subject_id, midpoint_id, arrowhead="none")
+            self.dot.edge(subject_id, midpoint_id, arrowhead='none')
             self.dot.edge(midpoint_id, object_id)
 
     def add_quads(self, quads) -> None:
@@ -242,8 +232,8 @@ class RDFStarVisualizer:
         if query:
             # Execute CONSTRUCT query through the interface
             results = store.query(query)
-            if not hasattr(results, "__iter__"):
-                raise TypeError("Query results must be iterable")
+            if not hasattr(results, '__iter__'):
+                raise TypeError('Query results must be iterable')
 
             for triple in results:
                 self.add_quad(triple)

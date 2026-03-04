@@ -6,7 +6,7 @@ import rclpy.executors
 from triplestar_kb.ros_kb_interface import RosTriplestarKBInterface
 
 # Constants
-DATA_FOLDER_NAME = "data"
+DATA_FOLDER_NAME = 'data'
 
 
 def main(args=None):
@@ -21,5 +21,5 @@ def main(args=None):
         node.destroy_node()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
