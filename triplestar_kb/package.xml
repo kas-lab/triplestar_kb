@@ -3,13 +3,12 @@
 <package format="3">
   <name>triplestar_kb</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Core TripleStarKB Package</description>
   <maintainer email="derijkmarijn00@gmail.com">marijn</maintainer>
   <license>Apache-2.0</license>
 
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
-  <depend>python3-graphviz</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
