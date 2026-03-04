@@ -1,0 +1,16 @@
+@prefix ex: <http://example.org/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+# Task assignments with priority and scheduling
+ex:Robot1 ex:assignedTask ex:CleaningTask001 {| ex:assignedBy ex:TaskManager ;
+                                               ex:priority "high"^^xsd:string ;
+                                               ex:deadline "2024-01-15T17:00:00"^^xsd:dateTime ;
+                                               ex:estimatedDuration "PT2H"^^xsd:duration |} .
+
+ex:Robot3 ex:assignedTask ex:SecurityPatrol001 {| ex:assignedBy ex:SecuritySystem ;
+                                                 ex:priority "medium"^^xsd:string ;
+                                                 ex:route "patrol_route_1" ;
+                                                 ex:frequency "PT4H"^^xsd:duration |} .
