@@ -9,10 +9,10 @@ class TriplestarKBInterface:
         if logger is None:
             raise ValueError('logger must be provided')
         self.logger = logger.get_child('KBInterface')
-        self.logger.info('Initializing TriplestarKBInterface')
+        self.store: Optional[Store] = None
         self.store_path = store_path
-        self._initialize_store()
         self.custom_functions: dict[NamedNode, Callable] = {}
+        self._initialize_store()
 
     def _add_custom_function(self, function_uri: NamedNode, function: Callable):
         self.custom_functions[function_uri] = function
@@ -24,152 +24,85 @@ class TriplestarKBInterface:
             self.logger.info('Initialized in-memory store')
         else:
             try:
-                if self.store_path.exists():
-                    self.logger.info(
-                        f'Store path {self.store_path} already exists. Loading existing store.'
-                    )
-                else:
-                    self.logger.info(
-                        f'Store path {self.store_path} does not exist. Creating new store.'
-                    )
+                action = 'Loading existing' if self.store_path.exists() else 'Creating new'
+                self.logger.info(f'{action} store at {self.store_path}')
                 self.store = Store(self.store_path)
-                self.logger.info(f'Initialized store at {self.store_path}')
-                self.logger.info(f'{self.count_triples()} triples present')
+                self.logger.info(f'{self._count_triples()} triples present')
             except Exception as e:
                 self.logger.error(f'Failed to initialize store at {self.store_path}: {e}')
                 raise
 
     def load_file(self, file_path: Path, format: RdfFormat = RdfFormat.TURTLE) -> bool:
-        """
-        Load a single RDF file into the store.
-
-        Args:
-            file_path: Path to the RDF file
-            format: RDF format (defaults to Turtle)
-
-        Returns:
-            True if successful, False otherwise
-        """
+        """Load a single RDF file into the store. Returns True if successful."""
         if self.store is None:
             raise RuntimeError('Store not initialized')
-
         if not file_path.exists():
             return False
-
         try:
-            with file_path.open('r', encoding='utf-8') as file:
-                self.store.load(input=file, format=format)
-            self.logger.info(f'Loaded file {file_path}')
+            with file_path.open('r', encoding='utf-8') as f:
+                self.store.load(input=f, format=format)
+            self.logger.info(f'Loaded {file_path}')
             return True
         except Exception as e:
-            self.logger.error(f'Failed to load file {file_path}: {e}')
+            self.logger.error(f'Failed to load {file_path}: {e}')
             return False
 
     def load_files(self, file_paths: List[Path], format: RdfFormat = RdfFormat.TURTLE) -> int:
-        """
-        Load multiple RDF files into the store.
+        """Load multiple RDF files. Returns the number of files successfully loaded."""
+        loaded = sum(self.load_file(f, format) for f in file_paths)
+        self.logger.info(f'Loaded {loaded}/{len(file_paths)} files')
+        return loaded
 
-        Args:
-            file_paths: List of paths to RDF files
-            format: RDF format (defaults to Turtle)
-
-        Returns:
-            Number of files successfully loaded
-        """
-        loaded_count = 0
-        failed_count = 0
-        for file_path in file_paths:
-            if self.load_file(file_path, format):
-                loaded_count += 1
-            else:
-                failed_count += 1
-        self.logger.info(f'Loaded {loaded_count} files, failed to load {failed_count} files')
-        return loaded_count
-
-    def count_triples(self) -> int:
-        """
-        Count total number of triples in the store.
-
-        Returns:
-            Number of triples
-        """
-        if self.store is None:
-            raise RuntimeError('Store not initialized')
-
+    def _count_triples(self) -> int:
+        """Return the total number of triples in the store."""
+        assert self.store is not None
         try:
-            query = 'SELECT (COUNT(*) AS ?count) WHERE {?s ?p ?o}'
-            query_result = self.store.query(query)
-            if hasattr(query_result, '__next__'):
-                result = next(query_result)
-            else:
-                raise RuntimeError('Query result does not support iteration')
-            return result['count'].value
+            query_result = self.store.query('SELECT (COUNT(*) AS ?count) WHERE {?s ?p ?o}')
+            row = next(query_result)  # type: ignore[arg-type, call-overload]
+            return int(row['count'].value)
         except Exception:
             return 0
 
     def clear(self) -> bool:
-        """
-        Clear all data from the store.
-
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.store:
+        """Clear all data from the store. Returns True if successful."""
+        if self.store is None:
             raise RuntimeError('Store not initialized')
-
         try:
-            # Clear all named graphs and the default graph
             self.store.update('CLEAR ALL')
             return True
         except Exception:
             return False
 
-    def close(self) -> None:
-        """Close and cleanup the store."""
-        if self.store:
-            if self.store_path is not None:
-                self.optimize()
-            self.store = None
-
     def optimize(self) -> bool:
-        """
-        Optimize the store.
-
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.store:
+        """Optimize the store. Returns True if successful."""
+        if self.store is None:
             raise RuntimeError('Store not initialized')
-
         try:
             self.store.optimize()
             return True
         except OSError as e:
-            self.logger.error(
-                f'Failed to optimize store: {e}',
-            )
+            self.logger.error(f'Failed to optimize store: {e}')
             return False
+
+    def close(self) -> None:
+        """Optimize (if persistent) and release the store."""
+        if self.store is not None:
+            if self.store_path is not None:
+                self.optimize()
+            self.store = None
 
     def query_json(self, query: str) -> str:
         """
-        Execute a SPARQL query on the store and return results as a JSON string.
-
-        Args:
-            query: The SPARQL query string to execute.
-
-        Returns:
-            A JSON string containing the query results, or an empty string if an error occurs.
+        Execute a SPARQL query and return the results as a JSON string.
+        Returns an empty string if the query fails.
         """
-        if not self.store:
+        if self.store is None:
             raise RuntimeError('Store not initialized')
 
         self.logger.debug(f'Executing query: {query}')
-
         try:
             result = self.store.query(query, custom_functions=self.custom_functions)
-            result_json = result.serialize(format=QueryResultsFormat.JSON)  # type:ignore
-            return result_json.decode('utf-8')  # type:ignore
+            return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # type: ignore
         except Exception as e:
             self.logger.error(f'Query execution failed: {e}')
-
-        return ''
+            return ''
