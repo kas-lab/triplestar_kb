@@ -1,5 +1,5 @@
 import time
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import rclpy
 import tf2_ros
@@ -24,32 +24,25 @@ class BaseQueryTimeSubscriber:
         raise NotImplementedError('get_latest must be implemented by subclasses')
 
 
-class QueryTimeSubscriber(BaseQueryTimeSubscriber):
-    def __init__(
-        self,
-        node: Node | LifecycleNode,
-        topic_name: str,
-        msg_field_name: Optional[str] = None,
-        msg_type: Optional[Type] = None,
-        max_age_sec=2.0,
-    ):
-        super().__init__(node, max_age_sec)
-        self._latest_msg: Optional[Any] = None
-        self._latest_time: Optional[float] = None
-        self._topic_name = topic_name
-        self._msg_field_name = msg_field_name
+class QueryTimeTopicSubscriber(BaseQueryTimeSubscriber):
+    def __init__(self, node: Node | LifecycleNode, config: dict):
+        super().__init__(node, config.get('max_age_sec', 2.0))
+        self._topic_name = config.get('topic_name', '')
+        self._msg_field_name = config.get('msg_field_name', None)
+        self._latest_msg = None
+        self._latest_time = None
 
-        self.wait_for_topic()
-        msg_type = get_msg_class(node, self._topic_name) if msg_type is None else msg_type
+        if not self.wait_for_topic():
+            raise RuntimeError(f'Topic {self._topic_name} not available')
+
+        msg_type = get_msg_class(node, self._topic_name)
+
         if msg_type is None:
-            self._logger.error(f'Unable to determine message class for topic: {self._topic_name}')
-            raise RuntimeError(
-                f'Message type could not be determined for topic {self._topic_name}'
-            )
+            raise RuntimeError(f'Unable to determine message class for topic: {self._topic_name}')
 
         if self._msg_field_name is not None:
             if not hasattr(msg_type, self._msg_field_name):
-                self._logger.error(
+                raise RuntimeError(
                     f'Message type {msg_type} does not have field {self._msg_field_name}'
                 )
             else:
@@ -57,12 +50,18 @@ class QueryTimeSubscriber(BaseQueryTimeSubscriber):
                     f'Subscribing to topic: {self._topic_name} with message type: {msg_type} and field: {self._msg_field_name}'
                 )
 
-        node.create_subscription(msg_type, self._topic_name, self._callback, 10)
+        self._subscription = self._node.create_subscription(
+            msg_type,
+            self._topic_name,
+            self._callback,
+            10,
+        )
+
         self._logger.info(f'Subscribed to topic: {self._topic_name}')
 
     def wait_for_topic(
         self,
-        timeout_sec: float = 30.0,
+        timeout_sec: float = 2.0,
         poll_interval: float = 2,
     ) -> bool:
         start_time = time.time()
@@ -105,22 +104,25 @@ class QueryTimeSubscriber(BaseQueryTimeSubscriber):
 class QueryTimeTFSubscriber(BaseQueryTimeSubscriber):
     def __init__(
         self,
-        node: Node | LifecycleNode,
-        max_age_sec: float = 2.0,
+        node,
+        config: dict,
+        buffer: tf2_ros.Buffer,
+        listener: tf2_ros.TransformListener,
     ):
-        super().__init__(node, max_age_sec)
+        super().__init__(node, config.get('max_age_sec', 2.0))
 
-        self._buffer = tf2_ros.Buffer()
-        self._listener = tf2_ros.TransformListener(self._buffer, node)
+        self.config = config
+        self._buffer = buffer
+        self._listener = listener
 
-        self._logger.info('Initialized TF subscriber with frame buffer')
-
-    def get_latest(self, from_frame: str, to_frame: str):
-        self._logger.debug(f'get_latest called for TF: {from_frame} -> {to_frame}')
+    def get_latest(self):
+        self._logger.debug(
+            f'get_latest called for TF: {self.config["from_frame"]} -> {self.config["to_frame"]}'
+        )
         try:
             transform = self._buffer.lookup_transform(
-                to_frame,
-                from_frame,
+                self.config['to_frame'],
+                self.config['from_frame'],
                 Time(),
                 timeout=rclpy.duration.Duration(seconds=1.0),  # type: ignore
             )
@@ -128,5 +130,7 @@ class QueryTimeTFSubscriber(BaseQueryTimeSubscriber):
             return transform.transform.translation
 
         except Exception as e:
-            self._logger.warn(f'TF lookup failed for {from_frame} -> {to_frame}: {e}')
+            self._logger.warn(
+                f'TF lookup failed for {self.config["from_frame"]} -> {self.config["to_frame"]}: {e}'
+            )
             return None

@@ -3,7 +3,7 @@ insertion_subscribers:
         topic: "/yolo/detections"
         template: "Detection.sparql.tmpl"
 
-query_time_topics:
+query_time_topic_subscribers:
     robotBatteryLevel:
         topic: "/battery_level"
     robotFootprint:
@@ -11,7 +11,7 @@ query_time_topics:
     robotTime:
         topic: "/time"
 
-query_time_tf:
+query_time_tf_subscribers:
     robotPose:
         from_frame: "base_link"
         to_frame: "map"

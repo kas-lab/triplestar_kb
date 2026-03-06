@@ -1,11 +1,9 @@
-from functools import partial
 from pathlib import Path
 from typing import Optional
 
 import rclpy
-import rclpy.executors
 import yaml
-from pyoxigraph import NamedNode
+from ament_index_python import get_package_share_directory
 from rclpy.lifecycle import (
     LifecycleNode,
     LifecycleState,
@@ -14,11 +12,7 @@ from rclpy.lifecycle import (
 from triplestar_kb_msgs.srv import Query
 
 from triplestar_kb.kb_interface import TriplestarKBInterface
-from triplestar_kb.msg_to_rdf import ros_msg_to_literal
-from triplestar_kb.query_time_subscriber import QueryTimeSubscriber, QueryTimeTFSubscriber
-
-XSD = 'http://www.w3.org/2001/XMLSchema#'
-EX = 'http://example.org/'
+from triplestar_kb.subscriptions.subscriber_manager import SubscriberManager
 
 
 class RosTriplestarKBInterface(LifecycleNode):
@@ -29,20 +23,15 @@ class RosTriplestarKBInterface(LifecycleNode):
     def __init__(self):
         super().__init__('triplestar_kb')
 
-        # Core KB components
         self.kb: Optional[TriplestarKBInterface] = None
-        self.query_time_subs = {}
-        self.tf_subscriber = None
+        self.subscriber_manager: Optional[SubscriberManager] = None
 
-        # Declare parameters with defaults
         self._declare_parameters()
 
         self.get_logger().info('Triplestar KB node created')
 
     def _declare_parameters(self):
         """Declare all node parameters with their default values."""
-
-        # bringup package
         bringup_share = get_package_share_directory('triplestar_kb_bringup')
 
         self.declare_parameter('store_path', str(Path(bringup_share) / 'store'))
@@ -50,7 +39,7 @@ class RosTriplestarKBInterface(LifecycleNode):
         self.declare_parameter('queries_dir', str(Path(bringup_share) / 'queries'))
         self.declare_parameter('preload_dir', str(Path(bringup_share) / 'preload'))
         self.declare_parameter(
-            'subscriber_config_file', str(Path(bringup_share) / 'config' / 'subscriber_config.yaml')
+            'subscriber_config_file', str(Path(bringup_share) / 'config' / 'subscribers.yaml')
         )
         self.declare_parameter(
             'preload_files',
@@ -59,22 +48,24 @@ class RosTriplestarKBInterface(LifecycleNode):
         )
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        """Initialize the RDF store and load preload files."""
+        """Initialize the RDF store, preload files, and set up subscribers."""
         self.get_logger().info('Configuring KB node...')
 
-        # Initialize the kb interface
         self.kb = TriplestarKBInterface(
-            store_path=Path(self.get_parameter('store_path').value), logger=self.get_logger()
+            store_path=Path(self.get_parameter('store_path').value),
+            logger=self.get_logger(),
         )
         self.get_logger().info(f'Using store path: {self.kb.store_path}')
 
-        # Load preload files
         if not self._preload_files():
             self.get_logger().error('Failed to preload files')
             return TransitionCallbackReturn.ERROR
 
-        # Initialize query-time subscriptions
-        self._create_query_time_subscriptions()
+        subscriber_config_path = Path(self.get_parameter('subscriber_config_file').value)
+        subscriber_config = yaml.safe_load(subscriber_config_path.read_text())
+
+        self.subscriber_manager = SubscriberManager(self, config=subscriber_config)
+        self.subscriber_manager.register_custom_functions(self.kb)
 
         self.get_logger().info('KB node configured successfully')
         return TransitionCallbackReturn.SUCCESS
@@ -87,6 +78,8 @@ class RosTriplestarKBInterface(LifecycleNode):
             self.kb.close()
             self.kb = None
 
+        self.subscriber_manager = None
+
         self.get_logger().info('KB node cleaned up')
         return TransitionCallbackReturn.SUCCESS
 
@@ -94,7 +87,6 @@ class RosTriplestarKBInterface(LifecycleNode):
         """Activate the KB node for serving."""
         self.get_logger().info('Activating KB node...')
 
-        # Create query service
         self.query_service = self.create_service(
             Query, f'{self.get_name()}/query', self.query_callback
         )
@@ -126,64 +118,8 @@ class RosTriplestarKBInterface(LifecycleNode):
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
 
-    def _create_query_time_subscriptions(self):
-        """Create subscriptions for query-time data injection."""
-        # Load regular topic subscriptions
-        query_time_subscriptions = self._load_subscription_config(
-            'query_time_subscriptions', 'No query time subscriptions specified'
-        )
-
-        # Load TF subscriptions
-        query_time_tf_subscriptions = self._load_subscription_config(
-            'query_time_tf_subscriptions',
-            'No query time TF subscriptions specified',
-        )
-
-        # Create regular topic subscribers
-        for name, values in query_time_subscriptions.items():
-            self.query_time_subs[name] = QueryTimeSubscriber(node=self, topic_name=values['topic'])
-
-        # Create TF subscriber if needed
-        if query_time_tf_subscriptions:
-            self.tf_subscriber = QueryTimeTFSubscriber(node=self)
-
-        # Register custom functions for topic subscribers
-        for name, sub in self.query_time_subs.items():
-            func = partial(lambda s: ros_msg_to_literal(s.get_latest()), sub)
-            if self.kb is not None:
-                self.kb._add_custom_function(NamedNode(EX + name), func)
-
-        # Register custom functions for TF subscriptions
-        for name, values in query_time_tf_subscriptions.items():
-            from_frame = values['from_frame']
-            to_frame = values['to_frame']
-            func = partial(
-                lambda tf_sub, from_f, to_f: ros_msg_to_literal(tf_sub.get_latest(from_f, to_f)),
-                self.tf_subscriber,
-                from_frame,
-                to_frame,
-            )
-            if self.kb is not None:
-                self.kb._add_custom_function(NamedNode(EX + name), func)
-
-    def _load_subscription_config(self, param_name: str, empty_msg: str) -> dict:
-        """Load subscription configuration from parameter."""
-        try:
-            param = self.get_parameter(param_name)
-            if param.type_ == rclpy.Parameter.Type.NOT_SET or not param.value:
-                self.get_logger().info(empty_msg)
-                return {}
-
-            subscriptions = yaml.safe_load(param.value) or {}
-            self.get_logger().info(f"Loaded subscriptions for '{param_name}': {subscriptions}")
-            return subscriptions
-
-        except Exception as e:
-            self.get_logger().warning(f"Failed to get parameter '{param_name}': {e}")
-            return {}
-
     def _preload_files(self) -> bool:
-        """Preload TTL files from the specified directory."""
+        """Preload TTL files from the configured preload directory."""
         if self.kb is None:
             self.get_logger().error('KB interface not initialized')
             return False
@@ -206,21 +142,17 @@ class RosTriplestarKBInterface(LifecycleNode):
             self.get_logger().warn('Preload files parameter is empty, skipping preload')
             return True
 
-        self.get_logger().info(f'Preloading files from {preload_dir}')
-
-        # Join preload_dir with each file in preload_files
-        file_paths = [preload_dir / file_name for file_name in preload_files_value]
-
-        # Filter to only existing .ttl files
-        file_paths = [f for f in file_paths if f.exists() and f.is_file() and f.suffix == '.ttl']
+        file_paths = [
+            preload_dir / name
+            for name in preload_files_value
+            if (preload_dir / name).is_file() and (preload_dir / name).suffix == '.ttl'
+        ]
 
         if not file_paths:
-            self.get_logger().warn(f'No valid .ttl files found from preload_files in {preload_dir}')
+            self.get_logger().warn(f'No valid .ttl files found in {preload_dir}')
             return False
 
-        self.get_logger().info(f'Found {len(file_paths)} .ttl files to preload')
-
-        # Load files
+        self.get_logger().info(f'Preloading {len(file_paths)} .ttl files from {preload_dir}')
         loaded_count = self.kb.load_files(file_paths)
 
         if loaded_count == 0:
@@ -231,7 +163,7 @@ class RosTriplestarKBInterface(LifecycleNode):
         return True
 
     def query_callback(self, request: Query.Request, response: Query.Response) -> Query.Response:
-        """Handle a query request."""
+        """Handle a SPARQL query request."""
         self.get_logger().debug(f'Received query request: {request}')
 
         if self.kb is None:
