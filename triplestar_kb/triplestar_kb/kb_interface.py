@@ -16,7 +16,7 @@ class TriplestarKBInterface:
 
     def _add_custom_function(self, function_uri: NamedNode, function: Callable):
         self.custom_functions[function_uri] = function
-        self.logger.info(f'Added custom function for {function_uri}')
+        self.logger.info(f'Added custom function for {function_uri.value}()')
 
     def _initialize_store(self):
         if self.store_path is None:
