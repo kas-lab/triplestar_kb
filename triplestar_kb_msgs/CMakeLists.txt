@@ -14,6 +14,8 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/Query.srv"
     "srv/SetVizQuery.srv"
+    "srv/SelectQuery.srv"
+    "srv/AskQuery.srv"
     DEPENDENCIES std_msgs rcl_interfaces
 )
 

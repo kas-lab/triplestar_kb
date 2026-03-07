@@ -15,16 +15,16 @@ class QueryServiceManager:
         queries_dir = Path(node.get_parameter('queries_dir').value)
         query_fn = self._make_query_fn(kb)
 
-        for name, sub_cfg in config.items():
+        for name, svc_cfg in config.items():
             try:
-                query_file = self._resolve_query_file(sub_cfg, queries_dir, name)
+                query_file = self._resolve_query_file(svc_cfg, queries_dir, name)
                 self.query_services[name] = QueryService(
                     node=node,
                     name=name,
                     query_file=query_file,
                     query_fn=query_fn,
                 )
-            except (KeyError, FileNotFoundError, RuntimeError) as e:
+            except (KeyError, ValueError, FileNotFoundError, RuntimeError) as e:
                 self.logger.error(f'Failed to create query service "{name}": {e}')
 
         self.logger.info(
