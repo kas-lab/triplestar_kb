@@ -27,7 +27,7 @@ setup(
         'console_scripts': [
             'kb_node = triplestar_kb.kb_node:main',
             'kb_marker_publisher = triplestar_kb.kb_marker_publisher:main',
-            'query_kb = triplestar_kb.query_kb:main',
+            'query_kb = scripts.query_kb:main',
         ],
     },
 )

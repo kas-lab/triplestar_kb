@@ -13,7 +13,6 @@ from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
-from returns.io import IOResult
 from triplestar_kb_msgs.srv import Query
 
 
@@ -51,24 +50,6 @@ class QueryKBClient(Node):
             return False, ''
 
 
-def read_query_file(filename: str) -> IOResult[str, Exception]:
-    """
-    Read SPARQL query from file.
-
-    Args:
-        filename: Path to the file containing the query
-
-    Returns:
-        IOResult containing the query string or error
-    """
-
-    def _read() -> str:
-        query_path = Path(filename)
-        return query_path.read_text()
-
-    return IOResult.from_callable(_read)
-
-
 def main(args=None):
     """Main entry point for the query_kb CLI tool."""
     parser = argparse.ArgumentParser(description='Query the triplestar knowledge base with SPARQL')
@@ -90,10 +71,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     try:
-        query_result = read_query_file(parsed_args.filename)
-
-        # Extract value from IOResult
-        query_string = query_result.unwrap()
+        query_string = Path(parsed_args.filename).read_text()
 
         client = QueryKBClient()
         success, result = client.send_query(query_string)
