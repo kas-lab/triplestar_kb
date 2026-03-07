@@ -152,6 +152,7 @@ class RosTriplestarKBInterface(LifecycleNode):
             return False
 
         self.get_logger().info(f'Successfully preloaded {loaded_count} files from {preload_dir}')
+        self.get_logger().info(f'Amount of triples in the KB: {self.kb._count_triples()}')
         return True
 
     def query_callback(self, request: Query.Request, response: Query.Response) -> Query.Response:
