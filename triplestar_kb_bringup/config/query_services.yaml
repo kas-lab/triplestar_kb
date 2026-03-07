@@ -1,0 +1,7 @@
+all_triples:
+    query_file: all_triples.sparql
+    type: select
+
+robot_pose:
+    query_file: robot_pose.sparql
+    type: select
