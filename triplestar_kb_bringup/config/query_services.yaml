@@ -6,3 +6,6 @@ robot_pose:
 
 count_triples:
     query_file: count_triples.sparql
+
+person_exists:
+    query_file: person_exists.sparql
