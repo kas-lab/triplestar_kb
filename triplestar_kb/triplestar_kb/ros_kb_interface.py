@@ -34,20 +34,8 @@ class RosTriplestarKBInterface(LifecycleNode):
 
     def _declare_parameters(self):
         """Declare all node parameters with their default values."""
-        bringup_share = get_package_share_directory('triplestar_kb_bringup')
-
-        self.declare_parameter('store_path', str(Path(bringup_share) / 'store'))
-        self.declare_parameter('templates_dir', str(Path(bringup_share) / 'templates'))
-        self.declare_parameter('queries_dir', str(Path(bringup_share) / 'queries'))
-        self.declare_parameter('preload_dir', str(Path(bringup_share) / 'preload'))
-        self.declare_parameter(
-            'subscriber_config_file',
-            str(Path(bringup_share) / 'config' / 'subscribers.yaml'),
-        )
-        self.declare_parameter(
-            'query_services_config_file',
-            str(Path(bringup_share) / 'config' / 'query_services.yaml'),
-        )
+        self.declare_parameter('store_path', '/tmp/triplestar_kb')
+        self.declare_parameter('config_package', 'triplestar_kb_bringup')
         self.declare_parameter(
             'preload_files',
             [''],
@@ -64,20 +52,33 @@ class RosTriplestarKBInterface(LifecycleNode):
         )
         self.get_logger().info(f'Using store path: {self.kb.store_path}')
 
-        if not self._preload_files():
+        config_pkg = self.get_parameter('config_package').value
+        try:
+            share_dir = Path(get_package_share_directory(config_pkg))
+        except Exception as e:
+            self.get_logger().error(
+                f'Could not find package share directory for "{config_pkg}": {e}'
+            )
+            return TransitionCallbackReturn.ERROR
+
+        self.get_logger().info(f'Using config package: {config_pkg} ({share_dir})')
+
+        if not self._preload_files(share_dir / 'preload'):
             self.get_logger().error('Failed to preload files')
             return TransitionCallbackReturn.ERROR
 
-        subscriber_config = self._load_yaml_config('subscriber_config_file')
+        subscriber_config = self._load_yaml_config(share_dir / 'config' / 'subscribers.yaml')
         if subscriber_config is None:
             return TransitionCallbackReturn.ERROR
-        self.subscriber_manager = SubscriberManager(self, config=subscriber_config, kb=self.kb)
+        self.subscriber_manager = SubscriberManager(
+            self, config=subscriber_config, kb=self.kb, templates_dir=share_dir / 'templates'
+        )
 
-        query_services_config = self._load_yaml_config('query_services_config_file')
+        query_services_config = self._load_yaml_config(share_dir / 'config' / 'query_services.yaml')
         if query_services_config is None:
             return TransitionCallbackReturn.ERROR
         self.query_service_manager = QueryServiceManager(
-            self, config=query_services_config, kb=self.kb
+            self, config=query_services_config, kb=self.kb, queries_dir=share_dir / 'queries'
         )
 
         self.get_logger().info('KB node configured successfully')
@@ -132,9 +133,8 @@ class RosTriplestarKBInterface(LifecycleNode):
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
 
-    def _load_yaml_config(self, param_name: str) -> Optional[dict]:
-        """Load a YAML config file from the path stored in the given parameter."""
-        config_path = Path(self.get_parameter(param_name).value)
+    def _load_yaml_config(self, config_path: Path) -> Optional[dict]:
+        """Load a YAML config file from the given path."""
         try:
             return yaml.safe_load(config_path.read_text()) or {}
         except FileNotFoundError:
@@ -144,8 +144,8 @@ class RosTriplestarKBInterface(LifecycleNode):
             self.get_logger().error(f'Failed to parse config file {config_path}: {e}')
             return None
 
-    def _preload_files(self) -> bool:
-        """Preload TTL files from the configured preload directory."""
+    def _preload_files(self, preload_dir: Path) -> bool:
+        """Preload TTL files from the given preload directory."""
         if self.kb is None:
             self.get_logger().error('KB interface not initialized')
             return False
@@ -156,7 +156,6 @@ class RosTriplestarKBInterface(LifecycleNode):
             self.get_logger().info('No preload files configured, skipping preload')
             return True
 
-        preload_dir = Path(self.get_parameter('preload_dir').value)
         if not preload_dir.is_dir():
             self.get_logger().warn(f'Preload directory {preload_dir} does not exist')
             return False

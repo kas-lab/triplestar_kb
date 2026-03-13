@@ -6,13 +6,12 @@ from triplestar_kb.query_services.query_service import QueryService
 
 
 class QueryServiceManager:
-    def __init__(self, node, config: dict, kb: TriplestarKBInterface):
+    def __init__(self, node, config: dict, kb: TriplestarKBInterface, queries_dir: Path):
         self.node = node
         self.logger = node.get_logger().get_child('query_service_manager')
 
         self.query_services: dict[str, QueryService] = {}
 
-        queries_dir = Path(node.get_parameter('queries_dir').value)
         query_fn = self._make_query_fn(kb)
 
         for name, svc_cfg in config.items():

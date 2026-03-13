@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable
 
 import tf2_ros
@@ -21,7 +22,7 @@ def _rdf_filter(value) -> str:
 
 
 class SubscriberManager:
-    def __init__(self, node, config: dict, kb: TriplestarKBInterface):
+    def __init__(self, node, config: dict, kb: TriplestarKBInterface, templates_dir: Path):
         self.node = node
         self.logger = node.get_logger().get_child('subscriber_manager')
 
@@ -32,7 +33,6 @@ class SubscriberManager:
         self.tf_query_subs: dict[str, QueryTimeTFSubscriber] = {}
         self.insertion_subs: dict[str, InsertionSubscriber] = {}
 
-        templates_dir = node.get_parameter('templates_dir').value
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.filters['rdf'] = _rdf_filter
 
