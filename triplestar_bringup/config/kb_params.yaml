@@ -1,0 +1,18 @@
+triplestar_core:
+    ros__parameters:
+        store_path: "/tmp/triplestar_core"
+
+        # Package whose share directory contains the KB configuration.
+        # The package must follow this layout convention:
+        #
+        #   <share>/templates/               - Jinja2 SPARQL insertion templates
+        #   <share>/queries/                 - SPARQL query files
+        #   <share>/preload/                 - RDF files to load at startup
+        #   <share>/config/subscribers.yaml
+        #   <share>/config/query_services.yaml
+        #
+        # config_package: "triplestar_bringup"
+
+        preload_files:
+            - floorplan.ttl
+            - annotated_data.ttl

@@ -6,14 +6,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Path to the installed CLI tool
-RDFSTAR_VIZ="$WS_DIR/install/triplestar_kb_viz/lib/triplestar_kb_viz/rdfstar-viz"
+RDFSTAR_VIZ="$WS_DIR/install/triplestar_viz/lib/triplestar_viz/rdfstar-viz"
 
 # Check if the tool exists
 if [ ! -f "$RDFSTAR_VIZ" ]; then
     echo "Error: rdfstar-viz not found at $RDFSTAR_VIZ"
     echo "Please build the package first:"
     echo "  cd $WS_DIR"
-    echo "  colcon build --packages-select triplestar_kb_viz"
+    echo "  colcon build --packages-select triplestar_viz"
     exit 1
 fi
 

@@ -19,6 +19,6 @@ fi
 query_content=$(cat "$query_file")
 
 # Call the ROS service
-response=$(ros2 service call /triplestar_kb/set_viz_query triplestar_kb_msgs/srv/SetVizQuery "{query: '$query_content', update_rate: $update_rate}")
+response=$(ros2 service call /triplestar_core/set_viz_query triplestar_msgs/srv/SetVizQuery "{query: '$query_content', update_rate: $update_rate}")
 
 echo "$response"
