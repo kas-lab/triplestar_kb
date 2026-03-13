@@ -1,6 +1,6 @@
 triplestar_core:
     ros__parameters:
-        store_path: "/tmp/triplestar_core"
+        store_path: "/tmp/triplestar_kb"
 
         # Package whose share directory contains the KB configuration.
         # The package must follow this layout convention:
