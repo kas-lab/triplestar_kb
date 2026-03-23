@@ -45,7 +45,7 @@ class SubscriberManager:
         # Register query-time subscribers as custom SPARQL functions
         all_query_subs = {**self.topic_query_subs, **self.tf_query_subs}
         for name, sub in all_query_subs.items():
-            kb._add_custom_function(
+            kb.add_custom_function(
                 NamedNode(EX + name),
                 lambda s=sub: ros_msg_to_literal(s.get_latest()),
             )

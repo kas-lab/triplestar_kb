@@ -89,7 +89,7 @@ class RosTriplestarKBInterface(LifecycleNode):
         self.get_logger().info('Cleaning up KB node...')
 
         if self.kb:
-            self.kb.close()
+            self.kb.optimize()
             self.kb = None
 
         self.subscriber_manager = None
@@ -178,7 +178,7 @@ class RosTriplestarKBInterface(LifecycleNode):
             return False
 
         self.get_logger().info(f'Successfully preloaded {loaded_count} files from {preload_dir}')
-        self.get_logger().info(f'Amount of triples in the KB: {self.kb._count_triples()}')
+        self.get_logger().info(f'Amount of triples in the KB: {self.kb.count_triples()}')
         return True
 
     def query_callback(

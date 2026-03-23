@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from pyoxigraph import NamedNode, QueryResultsFormat, RdfFormat, Store
+import reasonable
+from oxrdflib._converter import from_ox, to_ox
+from pyoxigraph import DefaultGraph, NamedNode, Quad, QueryResultsFormat, RdfFormat, Store
 
 
 class TriplestarKBInterface:
@@ -9,100 +11,77 @@ class TriplestarKBInterface:
         if logger is None:
             raise ValueError('logger must be provided')
         self.logger = logger.get_child('KBInterface')
-        self.store: Optional[Store] = None
-        self.store_path = store_path
-        self.custom_functions: dict[NamedNode, Callable] = {}
-        self._initialize_store()
 
-    def _add_custom_function(self, function_uri: NamedNode, function: Callable):
+        self.store_path = store_path
+        self.store: Store = Store(store_path) if store_path else Store()
+        self.logger.info(
+            f'Initialized store at {self.store_path if self.store_path else "in-memory"}'
+        )
+
+        self.reasoned_graph = NamedNode('http://example.org/reasoned-graph')
+
+        self.custom_functions: dict[NamedNode, Callable] = {}
+
+    def add_custom_function(self, function_uri: NamedNode, function: Callable):
         self.custom_functions[function_uri] = function
         self.logger.info(f'Added custom function for {function_uri.value}()')
 
-    def _initialize_store(self):
-        if self.store_path is None:
-            self.store = Store()
-            self.logger.info('Initialized in-memory store')
-        else:
-            try:
-                action = 'Loading existing' if self.store_path.exists() else 'Creating new'
-                self.logger.info(f'{action} store at {self.store_path}')
-                self.store = Store(self.store_path)
-                self.logger.info(f'{self._count_triples()} triples present')
-            except Exception as e:
-                self.logger.error(f'Failed to initialize store at {self.store_path}: {e}')
-                raise
+    def run_reasoning(self):
+        self.logger.info('Running reasoning...')
+        # NOTE: Reasoner is recreated each time, is that OK?
+        reasoner = reasonable.PyReasoner()
 
-    def load_file(self, file_path: Path, format: RdfFormat = RdfFormat.TURTLE) -> bool:
-        """Load a single RDF file into the store. Returns True if successful."""
-        if self.store is None:
-            raise RuntimeError('Store not initialized')
-        if not file_path.exists():
-            return False
-        try:
-            with file_path.open('r', encoding='utf-8') as f:
-                self.store.load(input=f, format=format)
-            self.logger.info(f'Loaded {file_path}')
-            return True
-        except Exception as e:
-            self.logger.error(f'Failed to load {file_path}: {e}')
-            return False
+        quads = self.store.quads_for_pattern(None, None, None, DefaultGraph())
+        triples = [from_ox(q.triple) for q in quads]
+
+        # NOTE: remove RDF* triples (maybe we can skip this later when reasonable catches up?)
+        triples = [t for t in triples if not any(isinstance(term, tuple) for term in t)]  # type: ignore[arg-type]
+
+        reasoner.from_graph(triples)
+        inferred = reasoner.reason()
+
+        def triple_to_reasoned_quad(s, p, o):
+            return Quad(to_ox(s), to_ox(p), to_ox(o), self.reasoned_graph)  # type: ignore[arg-type]
+
+        inferred_quads = [triple_to_reasoned_quad(s, p, o) for s, p, o in inferred]
+
+        # refresh reasoned graph
+        self.store.remove_graph(self.reasoned_graph)
+        self.store.extend(inferred_quads)
 
     def load_files(self, file_paths: List[Path], format: RdfFormat = RdfFormat.TURTLE) -> int:
-        """Load multiple RDF files. Returns the number of files successfully loaded."""
-        loaded = sum(self.load_file(f, format) for f in file_paths)
+        loaded = 0
+        for f in file_paths:
+            try:
+                with f.open('r', encoding='utf-8') as fh:
+                    self.store.load(input=fh, format=format)
+                loaded += 1
+            except Exception as e:
+                self.logger.error(f'Failed to load {f}: {e}')
         self.logger.info(f'Loaded {loaded}/{len(file_paths)} files')
         return loaded
 
-    def _count_triples(self) -> int:
-        """Return the total number of triples in the store."""
-        assert self.store is not None
-        try:
-            query_result = self.store.query('SELECT (COUNT(*) AS ?count) WHERE {?s ?p ?o}')
-            row = next(query_result)  # type: ignore[arg-type, call-overload]
-            return int(row['count'].value)
-        except Exception:
-            return 0
-
-    def clear(self) -> bool:
-        """Clear all data from the store. Returns True if successful."""
-        if self.store is None:
-            raise RuntimeError('Store not initialized')
-        try:
-            self.store.update('CLEAR ALL')
-            return True
-        except Exception:
-            return False
-
-    def optimize(self) -> bool:
-        """Optimize the store. Returns True if successful."""
-        if self.store is None:
-            raise RuntimeError('Store not initialized')
-        try:
-            self.store.optimize()
-            return True
-        except OSError as e:
-            self.logger.error(f'Failed to optimize store: {e}')
-            return False
-
-    def close(self) -> None:
-        """Optimize (if persistent) and release the store."""
-        if self.store is not None:
-            if self.store_path is not None:
-                self.optimize()
-            self.store = None
-
-    def query_json(self, query: str) -> str:
-        """
-        Execute a SPARQL query and return the results as a JSON string.
-        Returns an empty string if the query fails.
-        """
-        if self.store is None:
-            raise RuntimeError('Store not initialized')
-
+    def query_json(self, query: str, reasoning: bool = False) -> str:
         self.logger.debug(f'Executing query: {query}')
+
+        if reasoning:
+            self.run_reasoning()
         try:
-            result = self.store.query(query, custom_functions=self.custom_functions)
+            result = self.store.query(
+                query, custom_functions=self.custom_functions, use_default_graph_as_union=reasoning
+            )
             return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # type: ignore
         except Exception as e:
             self.logger.error(f'Query execution failed: {e}')
             return ''
+
+    def count_triples(self) -> int:
+        return len(list(self.store.quads_for_pattern(None, None, None, None)))
+
+    def clear(self):
+        """Clear all data from the store. Returns True if successful."""
+        self.store.clear()
+
+    def optimize(self):
+        if self.store_path:
+            self.store.optimize()
