@@ -10,8 +10,8 @@ triplestar_core:
         #   <share>/preload/                 - RDF files to load at startup
         #   <share>/config/subscribers.yaml
         #   <share>/config/query_services.yaml
-        #
-        # config_package: "triplestar_bringup"
+
+        config_package: "triplestar_bringup"
 
         preload_files:
             - example_data.ttl
