@@ -62,7 +62,7 @@ class QueryService:
             callback,
         )
 
-        self.logger.info(f'Query service "{service_name}" ready ({query_type})')
+        self.logger.info(f'Query service "{srv_name}" ready ({query_type})')
 
     def _handle_select(self, request, response):
         return self._handle(response, lambda r: r)
