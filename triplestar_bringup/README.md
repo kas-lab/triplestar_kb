@@ -26,7 +26,14 @@ The KB pulls in data using [query time subscribers](../README.md#query-time-subs
 
 ## Queries
 
+Put [SPARQL](https://www.w3.org/TR/sparql12-query/) queries in this folder.
+Those queries can then be used to setup query services using the `query_services.yaml` config file.
+
 ## Preload
+
+Put ttl files with information you want preloaded into the knowledge base here.
+
+**WARNING**: if you are using triple annotations (The new feature in RDF 1.2), make sure to use [explicit reifiers](https://www.w3.org/TR/rdf12-turtle/#ex-reified-triple-with-reifier). If this is not done the KB will create new blank nodes for the reifier on each startup, causing unwanted duplication of information.
 
 ## Templates
 
