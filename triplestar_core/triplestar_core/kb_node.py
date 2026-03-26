@@ -5,9 +5,6 @@ import rclpy.executors
 
 from triplestar_core.ros_kb_interface import RosTriplestarKBInterface
 
-# Constants
-DATA_FOLDER_NAME = 'data'
-
 
 def main(args=None):
     rclpy.init(args=args)
