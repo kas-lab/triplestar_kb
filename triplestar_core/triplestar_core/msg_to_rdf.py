@@ -144,9 +144,5 @@ def convert_str(value: str) -> RdfLiteral:
     Bool,
     String,
 )
-def convert_std_msg(value) -> Optional[RdfLiteral]:
-    return registry.convert(value.data)
-
-
 def ros_msg_to_literal(msg: Any) -> Optional[RdfLiteral]:
     return registry.convert(msg)
