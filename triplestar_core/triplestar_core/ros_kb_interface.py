@@ -121,6 +121,8 @@ class RosTriplestarKBInterface(LifecycleNode):
         """Deactivate the KB node but keep data in memory."""
         self.get_logger().info('Deactivating KB node...')
 
+        self.query_service = None
+
         result = super().on_deactivate(state)
 
         if result == TransitionCallbackReturn.SUCCESS:
