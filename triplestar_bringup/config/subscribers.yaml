@@ -2,21 +2,21 @@
 # received on the given topic, inserting the result into the KB.
 
 insertion_subscribers:
-    my_detections:
-        topic: "/detections"
-        template: "ExampleInsertion.sparql.tmpl"
+  my_detections:
+    topic: "/detections"
+    template: "ExampleInsertion.sparql.tmpl"
 
 # Query-time topic subscribers expose the latest message on a topic as a
-# custom SPARQL function (e.g. ex:batteryLevel()) available at query time.
+# custom SPARQL function qt:batteryLevel() available at query time.
 
 query_time_topic_subscribers:
-    batteryLevel:
-        topic: "/battery_level"
+  batteryLevel:
+    topic: "/battery_level"
 
 # Query-time TF subscribers expose the latest transform between two frames
-# as a custom SPARQL function (e.g. ex:robotPose()) available at query time.
+# as a custom SPARQL function qt:robotPose() available at query time.
 
 query_time_tf_subscribers:
-    robotPose:
-        from_frame: "base_link"
-        to_frame: "map"
+  robotPose:
+    from_frame: "base_link"
+    to_frame: "map"
