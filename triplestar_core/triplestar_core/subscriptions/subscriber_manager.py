@@ -4,7 +4,7 @@ from typing import Callable
 import tf2_ros
 from jinja2 import Environment, FileSystemLoader
 
-from triplestar_core.kb_interface import TriplestarKnowledgeBase
+from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.msg_to_rdf import ros_msg_to_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import (

@@ -3,7 +3,7 @@
 import rclpy
 import rclpy.executors
 
-from triplestar_core.ros_kb_interface import TriplestarKBNode
+from triplestar_core.kb_lifecycle_node import TriplestarKBNode
 
 
 def main(args=None):

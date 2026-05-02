@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from triplestar_core.kb_interface import TriplestarKnowledgeBase
+from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service import FileQueryService
 
 

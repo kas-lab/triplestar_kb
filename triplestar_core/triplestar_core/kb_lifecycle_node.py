@@ -11,7 +11,7 @@ from rclpy.lifecycle import (
 )
 from triplestar_msgs.srv import SPARQLQuery
 
-from triplestar_core.kb_interface import TriplestarKnowledgeBase
+from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
 
