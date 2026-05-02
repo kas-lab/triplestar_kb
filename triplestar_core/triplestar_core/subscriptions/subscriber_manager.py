@@ -4,12 +4,12 @@ from typing import Callable
 import tf2_ros
 from jinja2 import Environment, FileSystemLoader
 
-from triplestar_core.kb_interface import TriplestarKBInterface
+from triplestar_core.kb_interface import TriplestarKnowledgeBase
 from triplestar_core.msg_to_rdf import ros_msg_to_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import (
-    QueryTimeTFSubscriber,
-    QueryTimeTopicSubscriber,
+    TransformLatestSubscriber,
+    TopicLatestSubscriber,
 )
 
 
@@ -18,16 +18,16 @@ def _rdf_filter(value) -> str:
     return str(literal) if literal is not None else repr(value)
 
 
-class SubscriberManager:
-    def __init__(self, node, config: dict, kb: TriplestarKBInterface, templates_dir: Path):
+class SubscriptionManager:
+    def __init__(self, node, config: dict, kb: TriplestarKnowledgeBase, templates_dir: Path):
         self.node = node
         self.logger = node.get_logger().get_child('subscriber_manager')
 
         self._buffer = tf2_ros.Buffer()
         self._listener = tf2_ros.TransformListener(self._buffer, node)
 
-        self.topic_query_subs: dict[str, QueryTimeTopicSubscriber] = {}
-        self.tf_query_subs: dict[str, QueryTimeTFSubscriber] = {}
+        self.topic_query_subs: dict[str, TopicLatestSubscriber] = {}
+        self.tf_query_subs: dict[str, TransformLatestSubscriber] = {}
         self.insertion_subs: dict[str, InsertionSubscriber] = {}
 
         env = Environment(loader=FileSystemLoader(templates_dir))
@@ -54,7 +54,7 @@ class SubscriberManager:
             f'insertion: {list(self.insertion_subs.keys())}'
         )
 
-    def _make_update_fn(self, kb: TriplestarKBInterface) -> Callable[[str], None]:
+    def _make_update_fn(self, kb: TriplestarKnowledgeBase) -> Callable[[str], None]:
         def update_fn(sparql: str) -> None:
             if kb.store is None:
                 self.logger.error('KB store is not initialized, dropping insertion')
@@ -69,7 +69,7 @@ class SubscriberManager:
                 topic = self._require(
                     sub_cfg, 'topic', context=f'query_time_topic_subscribers.{name}'
                 )
-                self.topic_query_subs[name] = QueryTimeTopicSubscriber(
+                self.topic_query_subs[name] = TopicLatestSubscriber(
                     node=self.node,
                     topic=topic,
                     max_age_sec=sub_cfg.get('max_age_sec', 2.0),
@@ -87,7 +87,7 @@ class SubscriberManager:
                 to_frame = self._require(
                     sub_cfg, 'to_frame', context=f'query_time_tf_subscribers.{name}'
                 )
-                self.tf_query_subs[name] = QueryTimeTFSubscriber(
+                self.tf_query_subs[name] = TransformLatestSubscriber(
                     node=self.node,
                     from_frame=from_frame,
                     to_frame=to_frame,

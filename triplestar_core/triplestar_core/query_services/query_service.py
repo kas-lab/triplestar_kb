@@ -27,7 +27,7 @@ def _detect_query_type(query_file: Path) -> QueryType:
     return match.group(1).lower()  # type: ignore[return-value]
 
 
-class QueryService:
+class FileQueryService:
     def __init__(
         self,
         node: Node | LifecycleNode,

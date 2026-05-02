@@ -6,7 +6,7 @@ from oxrdflib._converter import from_ox, to_ox
 from pyoxigraph import DefaultGraph, NamedNode, Quad, QueryResultsFormat, RdfFormat, Store
 
 
-class TriplestarKBInterface:
+class TriplestarKnowledgeBase:
     def __init__(
         self,
         store_path: Path,

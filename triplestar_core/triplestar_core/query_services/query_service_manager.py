@@ -1,15 +1,15 @@
 from pathlib import Path
 
-from triplestar_core.kb_interface import TriplestarKBInterface
-from triplestar_core.query_services.query_service import QueryService
+from triplestar_core.kb_interface import TriplestarKnowledgeBase
+from triplestar_core.query_services.query_service import FileQueryService
 
 
 class QueryServiceManager:
-    def __init__(self, node, config: dict, kb: TriplestarKBInterface, queries_dir: Path):
+    def __init__(self, node, config: dict, kb: TriplestarKnowledgeBase, queries_dir: Path):
         self.node = node
         self.logger = node.get_logger().get_child('query_service_manager')
 
-        self.query_services: dict[str, QueryService] = {}
+        self.query_services: dict[str, FileQueryService] = {}
 
         for name, srv_config in config.items():
             try:
@@ -26,7 +26,7 @@ class QueryServiceManager:
                 def query_fn(sparql: str, reasoning=reasoning_enabled) -> str:
                     return kb.query_json(sparql, reasoning=reasoning)
 
-                self.query_services[name] = QueryService(
+                self.query_services[name] = FileQueryService(
                     node=node,
                     name=name,
                     query_file=query_file,

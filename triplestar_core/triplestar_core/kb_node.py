@@ -3,12 +3,12 @@
 import rclpy
 import rclpy.executors
 
-from triplestar_core.ros_kb_interface import RosTriplestarKBInterface
+from triplestar_core.ros_kb_interface import TriplestarKBNode
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = RosTriplestarKBInterface()
+    node = TriplestarKBNode()
 
     executor = rclpy.executors.MultiThreadedExecutor()
     executor.add_node(node)

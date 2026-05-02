@@ -11,12 +11,12 @@ from rclpy.lifecycle import (
 )
 from triplestar_msgs.srv import SPARQLQuery
 
-from triplestar_core.kb_interface import TriplestarKBInterface
+from triplestar_core.kb_interface import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
-from triplestar_core.subscriptions.subscriber_manager import SubscriberManager
+from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
 
 
-class RosTriplestarKBInterface(LifecycleNode):
+class TriplestarKBNode(LifecycleNode):
     """
     A ROS2 lifecycle node for managing a triplestar knowledge base using pyoxigraph.
     """
@@ -24,8 +24,8 @@ class RosTriplestarKBInterface(LifecycleNode):
     def __init__(self):
         super().__init__('triplestar_core')
 
-        self.kb: Optional[TriplestarKBInterface] = None
-        self.subscriber_manager: Optional[SubscriberManager] = None
+        self.kb: Optional[TriplestarKnowledgeBase] = None
+        self.subscriber_manager: Optional[SubscriptionManager] = None
         self.query_service_manager: Optional[QueryServiceManager] = None
 
         self._declare_parameters()
@@ -47,7 +47,7 @@ class RosTriplestarKBInterface(LifecycleNode):
         """Initialize the RDF store, preload files, and set up subscribers and query services."""
         self.get_logger().info('Configuring KB node...')
 
-        self.kb = TriplestarKBInterface(
+        self.kb = TriplestarKnowledgeBase(
             store_path=Path(self.get_parameter('store_path').value),
             logger=self.get_logger(),
             base_iri=self.get_parameter('base_iri').value,
@@ -72,7 +72,7 @@ class RosTriplestarKBInterface(LifecycleNode):
         subscriber_config = self._load_yaml_config(share_dir / 'config' / 'subscribers.yaml')
         if subscriber_config is None:
             return TransitionCallbackReturn.ERROR
-        self.subscriber_manager = SubscriberManager(
+        self.subscriber_manager = SubscriptionManager(
             self, config=subscriber_config, kb=self.kb, templates_dir=share_dir / 'templates'
         )
 

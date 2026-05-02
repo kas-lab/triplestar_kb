@@ -27,7 +27,7 @@ def wait_for_topic(
     return False
 
 
-class BaseQueryTimeSubscriber:
+class BaseLatestSubscriber:
     def __init__(self, node: Node | LifecycleNode, max_age_sec: float = 2.0) -> None:
         self._node = node
         self._max_age_sec = max_age_sec
@@ -37,7 +37,7 @@ class BaseQueryTimeSubscriber:
         raise NotImplementedError('get_latest must be implemented by subclasses')
 
 
-class QueryTimeTopicSubscriber(BaseQueryTimeSubscriber):
+class TopicLatestSubscriber(BaseLatestSubscriber):
     def __init__(
         self,
         node: Node | LifecycleNode,
@@ -88,7 +88,7 @@ class QueryTimeTopicSubscriber(BaseQueryTimeSubscriber):
         )
 
 
-class QueryTimeTFSubscriber(BaseQueryTimeSubscriber):
+class TransformLatestSubscriber(BaseLatestSubscriber):
     def __init__(
         self,
         node: Node | LifecycleNode,
