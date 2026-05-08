@@ -38,6 +38,7 @@ setup(
         'console_scripts': [
             'kb_visualizer_node = triplestar_viz.kb_visualizer_node:main',
             'rdfstar_viz = triplestar_viz.cli:main',
+            'kb_geometry_visualizer = triplestar_viz.kb_geometry_visualizer:main',
         ],
     },
 )
