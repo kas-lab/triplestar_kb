@@ -7,6 +7,7 @@ from shapely import wkt
 from triplestar_msgs.srv import SPARQLQuery
 from visualization_msgs.msg import Marker, MarkerArray
 
+
 class KBGeometryVisualizer(Node):
     def __init__(self):
         super().__init__('kb_geometry_visualizer')
@@ -67,7 +68,9 @@ class KBGeometryVisualizer(Node):
                 if geom.geom_type == 'Polygon':
                     geom_marker.type = Marker.LINE_STRIP
                     geom_marker.scale.x = 0.05  # line thickness
-                    geom_marker.points = [Point(x=pt[0], y=pt[1], z=0.0) for pt in geom.exterior.coords]
+                    geom_marker.points = [
+                        Point(x=pt[0], y=pt[1], z=0.0) for pt in geom.exterior.coords
+                    ]
                 elif geom.geom_type == 'LineString':
                     geom_marker.type = Marker.LINE_STRIP
                     geom_marker.scale.x = 0.05  # line thickness
@@ -81,7 +84,9 @@ class KBGeometryVisualizer(Node):
                     geom_marker.pose.position.y = geom.y
                     geom_marker.pose.position.z = 0.0
                 else:
-                    self.get_logger().warn(f"Unsupported geometry type '{geom.geom_type}' for {entity_uri}")
+                    self.get_logger().warn(
+                        f"Unsupported geometry type '{geom.geom_type}' for {entity_uri}"
+                    )
                     continue
 
                 marker_array.markers.append(geom_marker)
