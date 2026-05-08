@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 from typing import Callable, List
 
@@ -24,14 +25,17 @@ class TriplestarKnowledgeBase:
         )
 
         self.base_iri = base_iri
-        self.reasoned_graph = NamedNode(f'{self.base_iri}/reasoned-graph')
         self.function_uri_base: str = f'{self.base_iri}/functions/'
         self.query_time_uri_base: str = f'{self.base_iri}/query-time/'
         self.extra_iris = {
             'fn': self.function_uri_base,
             'qt': self.query_time_uri_base,
-            '' : self.base_iri
+            '': self.base_iri,
         }
+
+        print('reasoner thread', threading.get_ident())
+        self.reasoner = reasonable.PyReasoner()  # type:ignore
+        self.reasoned_graph = NamedNode(f'{self.base_iri}/reasoned-graph')
 
         self.custom_functions: dict[NamedNode, Callable] = {}
 
@@ -48,8 +52,8 @@ class TriplestarKnowledgeBase:
 
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
-        # NOTE: Reasoner is recreated each time, is that OK?
-        reasoner = reasonable.PyReasoner()
+
+        print('reason thread', threading.get_ident())
 
         # filter out RDF* triples (reasoner does not support RDF*)
         def is_plain_triple(t):
@@ -61,24 +65,26 @@ class TriplestarKnowledgeBase:
             if is_plain_triple(from_ox(q.triple))
         ]
 
-        reasoner.from_graph(triples)
-        inferred = reasoner.reason()
-
+        self.reasoner.update_graph(triples)
         inferred_quads = [
             Quad(to_ox(s), to_ox(p), to_ox(o), self.reasoned_graph)  # type: ignore
-            for s, p, o in inferred
+            for s, p, o in self.reasoner.reason()
         ]
 
         # refresh reasoned graph
-        self.store.remove_graph(self.reasoned_graph)
-        self.store.extend(inferred_quads)
+        self.store.clear_graph(self.reasoned_graph)
+        self.store.bulk_extend(inferred_quads)
 
     def load_files(self, file_paths: List[Path], format: RdfFormat = RdfFormat.TURTLE) -> int:
         loaded = 0
         for f in file_paths:
             try:
                 with f.open('r', encoding='utf-8') as fh:
-                    self.store.load(input=fh, format=format)
+                    self.store.load(
+                        input=fh,
+                        format=format,
+                        base_iri=self.base_iri,
+                    )
                 loaded += 1
             except Exception as e:
                 self.logger.error(f'Failed to load {f}: {e}')

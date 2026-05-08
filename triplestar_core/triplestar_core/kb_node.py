@@ -10,16 +10,13 @@ def main(args=None):
     rclpy.init(args=args)
     node = TriplestarKBNode()
 
-    executor = rclpy.executors.MultiThreadedExecutor()
-    executor.add_node(node)
     try:
-        executor.spin()
-    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+        rclpy.spin(node)
+    except KeyboardInterrupt:
         pass
     finally:
         node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
