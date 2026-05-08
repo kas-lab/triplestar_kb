@@ -24,7 +24,7 @@ def _detect_query_type(query_file: Path) -> QueryType:
         raise ValueError(
             f'Could not detect query type in "{query_file}" — expected a SELECT or ASK query'
         )
-    return match.group(1).lower()  # type: ignore[return-value]
+    return match.group(1).lower()  # type: ignore
 
 
 class FileQueryService:
@@ -40,9 +40,8 @@ class FileQueryService:
         if not query_file.exists():
             raise FileNotFoundError(f'Query file not found: {query_file}')
 
-        self._query = query_file.read_text()
+        self._query_file = query_file
         self._query_fn = query_fn
-        self.logger = node.get_logger().get_child(name)
 
         query_type = _detect_query_type(query_file)
         srv_name = f'{node.get_name()}/query_services/{name}'
@@ -71,8 +70,10 @@ class FileQueryService:
         return self._handle(response, lambda r: json.loads(r).get('boolean', False))
 
     def _handle(self, response, transform_fn):
+        query = self._query_file.read_text()
+
         try:
-            raw = self._query_fn(self._query)
+            raw = self._query_fn(query)
             if not raw:
                 response.success = False
                 response.error_message = 'Query returned an empty result'

@@ -8,8 +8,8 @@ from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.msg_to_rdf import ros_msg_to_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import (
-    TransformLatestSubscriber,
     TopicLatestSubscriber,
+    TransformLatestSubscriber,
 )
 
 
