@@ -56,10 +56,7 @@ class SubscriptionManager:
 
     def _make_update_fn(self, kb: TriplestarKnowledgeBase) -> Callable[[str], None]:
         def update_fn(sparql: str) -> None:
-            if kb.store is None:
-                self.logger.error('KB store is not initialized, dropping insertion')
-                return
-            kb.store.update(sparql)
+            kb.update(sparql)
 
         return update_fn
 

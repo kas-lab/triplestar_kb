@@ -30,6 +30,7 @@ class TriplestarKnowledgeBase:
         self.extra_iris = {
             'fn': self.function_uri_base,
             'qt': self.query_time_uri_base,
+            '' : self.base_iri
         }
 
         self.custom_functions: dict[NamedNode, Callable] = {}
@@ -83,6 +84,18 @@ class TriplestarKnowledgeBase:
                 self.logger.error(f'Failed to load {f}: {e}')
         self.logger.info(f'Loaded {loaded}/{len(file_paths)} files')
         return loaded
+
+    def update(self, query: str) -> None:
+        self.logger.debug(f'Executing update: {query}')
+        try:
+            self.store.update(
+                query,
+                base_iri=self.base_iri,
+                prefixes=self.extra_iris,
+                custom_functions=self.custom_functions,
+            )
+        except Exception as e:
+            self.logger.error(f'Update failed: {e}')
 
     def query_json(self, query: str, reasoning: bool = False) -> str:
         self.logger.debug(f'Executing query: {query}')
