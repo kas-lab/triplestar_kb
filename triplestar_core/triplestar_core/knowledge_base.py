@@ -1,4 +1,3 @@
-import threading
 from pathlib import Path
 from typing import Callable, List
 
@@ -33,7 +32,6 @@ class TriplestarKnowledgeBase:
             '': self.base_iri,
         }
 
-        print('reasoner thread', threading.get_ident())
         self.reasoner = reasonable.PyReasoner()  # type:ignore
         self.reasoned_graph = NamedNode(f'{self.base_iri}/reasoned-graph')
 
@@ -52,8 +50,6 @@ class TriplestarKnowledgeBase:
 
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
-
-        print('reason thread', threading.get_ident())
 
         # filter out RDF* triples (reasoner does not support RDF*)
         def is_plain_triple(t):
