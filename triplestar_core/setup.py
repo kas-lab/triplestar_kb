@@ -21,6 +21,7 @@ setup(
         'pydantic',
         'jinja2',
         'pyyaml',
+        'copier',
     ],
     zip_safe=True,
     maintainer='marijn',
