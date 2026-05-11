@@ -1,0 +1,11 @@
+# Example SPARQL query: Count all triples in the knowledge base
+# Usage: ros2 run triplestar_core query_kb count_triples.sparql
+
+PREFIX ex: <http://example.org/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT (COUNT(*) as ?count)
+WHERE {
+  ?subject ?predicate ?object .
+}

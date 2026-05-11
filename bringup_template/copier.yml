@@ -1,0 +1,10 @@
+# questions
+bringup_name:
+  type: str
+  help: What is the name of your custom TriplestarKB bringup package?
+
+_preserve_symlinks: false
+
+_exclude:
+  - "COLCON_IGNORE"
+  - "copier.yml"

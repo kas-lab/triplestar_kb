@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+  <arg name="enable-geometry-viz" default="false" />
+
+  <include file="$(find-pkg-share triplestar_bringup)/launch/triplestar_kb.launch.py">
+      <arg name="bringup-package" value="{{bringup_name}}" />
+      <arg name="enable-geometry-visualizer" value="$(var enable-geometry-viz)" />
+  </include>
+
+</launch>

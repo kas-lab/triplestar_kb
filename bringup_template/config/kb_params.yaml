@@ -1,0 +1,9 @@
+# Where on the system to persist the oxigraph store folder
+store_path: "/tmp/triplestar_kb"
+
+# Base IRI for resolving relative IRIs and functions in the KB.
+base_iri: "http://triplestar.local"
+
+# Turtle files to load at startup.
+preload_files:
+  - example_data.ttl

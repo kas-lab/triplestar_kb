@@ -16,6 +16,11 @@ setup(
         'returns>=0.22.0',
         'shapely',
         'pyoxigraph',
+        'reasonable',
+        'oxrdflib',
+        'pydantic',
+        'jinja2',
+        'pyyaml',
     ],
     zip_safe=True,
     maintainer='marijn',
@@ -27,6 +32,7 @@ setup(
         'console_scripts': [
             'kb_node = triplestar_core.kb_node:main',
             'kb_marker_publisher = triplestar_core.kb_marker_publisher:main',
+            'query_kb = scripts.query_kb:main',
         ],
     },
 )

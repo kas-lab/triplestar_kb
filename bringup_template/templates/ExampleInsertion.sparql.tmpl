@@ -1,0 +1,10 @@
+# Example SPARQL insertion template using Jinja2 syntax.
+#
+# The 'msg' variable contains the incoming ROS message.
+# Use the rdf filter to convert ROS values to RDF literals.
+#
+# Customize this template for your specific message type and topic.
+
+INSERT DATA {
+  <sensor> <timestamp> {{ msg.header.stamp | rdf }} .
+}

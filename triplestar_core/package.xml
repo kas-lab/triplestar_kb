@@ -7,8 +7,22 @@
   <maintainer email="derijkmarijn00@gmail.com">marijn</maintainer>
   <license>Apache-2.0</license>
 
+  <depend>rclpy</depend>
+  <depend>tf2_ros</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>ros2topic</depend>
+  <depend>triplestar_msgs</depend>
+  <depend>ament_index_python</depend>
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
+
+  <!-- Python dependencies -->
+  <depend>python3-jinja2</depend>
+  <depend>python3-pydantic</depend>
+  <depend>python3-yaml</depend>
+  <depend>python3-shapely</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

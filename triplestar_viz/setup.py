@@ -18,6 +18,7 @@ setup(
         'graphviz',
         'pyoxigraph',
         'Pillow',
+        'shapely',
     ],
     zip_safe=True,
     maintainer='marijn',

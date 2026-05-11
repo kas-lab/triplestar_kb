@@ -1,0 +1,23 @@
+# Insertion subscribers run a Jinja2 SPARQL template on every message
+# received on the given topic, inserting the result into the KB.
+
+insertion_subscribers:
+  my_detections:
+    topic: "/detections"
+    template: "ExampleInsertion.sparql.tmpl"
+
+# Query-time topic subscribers expose the latest message on a topic as a
+# custom SPARQL function available at query time, e.g. qt:rosTime().
+
+query_time_topic_subscribers:
+  rosTime:
+    topic: "/clock"
+    msg_field_name: "clock"
+
+# Query-time TF subscribers expose the latest transform between two frames
+# as a custom SPARQL function qt:robotPose() available at query time.
+
+query_time_tf_subscribers:
+  robotPose:
+    from_frame: "base_link"
+    to_frame: "map"
