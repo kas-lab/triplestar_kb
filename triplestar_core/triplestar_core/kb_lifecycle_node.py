@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
-import rclpy
 import yaml
 from ament_index_python import get_package_share_directory
+from pydantic import BaseModel, Field
 from rclpy.lifecycle import (
     LifecycleNode,
     LifecycleState,
@@ -14,6 +14,12 @@ from triplestar_msgs.srv import SPARQLQuery
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
+
+
+class KBConfig(BaseModel):
+    store_path: Path
+    preload_files: List[str] = Field(default_factory=list)
+    base_iri: str
 
 
 class TriplestarKBNode(LifecycleNode):
@@ -28,59 +34,60 @@ class TriplestarKBNode(LifecycleNode):
         self.subscriber_manager: Optional[SubscriptionManager] = None
         self.query_service_manager: Optional[QueryServiceManager] = None
 
-        self._declare_parameters()
+        self.declare_parameter('bringup_package', 'triplestar_bringup')
 
         self.get_logger().info('Triplestar KB node created')
 
-    def _declare_parameters(self):
-        """Declare all node parameters with their default values."""
-        self.declare_parameter('store_path', '/tmp/triplestar_core')
-        self.declare_parameter('config_package', 'triplestar_bringup')
-        self.declare_parameter(
-            'preload_files',
-            [''],
-            descriptor=rclpy.node.ParameterDescriptor(type=rclpy.Parameter.Type.STRING_ARRAY),
-        )
-        self.declare_parameter('base_iri', 'http://triplestar.local/')
-
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        """Initialize the RDF store, preload files, and set up subscribers and query services."""
         self.get_logger().info('Configuring KB node...')
 
-        self.kb = TriplestarKnowledgeBase(
-            store_path=Path(self.get_parameter('store_path').value),
-            logger=self.get_logger(),
-            base_iri=self.get_parameter('base_iri').value,
-        )
-        self.get_logger().info(f'Using store path: {self.kb.store_path}')
+        bringup_package = self.get_parameter('bringup_package').value
 
-        config_pkg = self.get_parameter('config_package').value
         try:
-            share_dir = Path(get_package_share_directory(config_pkg))
+            share_dir = Path(get_package_share_directory(bringup_package))
         except Exception as e:
             self.get_logger().error(
-                f'Could not find package share directory for "{config_pkg}": {e}'
+                f'Could not find package share directory for "{bringup_package}": {e}'
             )
             return TransitionCallbackReturn.ERROR
 
-        self.get_logger().info(f'Using config package: {config_pkg} ({share_dir})')
+        self.share_dir = share_dir  # cache it
 
-        if not self._preload_files(share_dir / 'preload'):
-            self.get_logger().error('Failed to preload files')
-            return TransitionCallbackReturn.ERROR
+        self.get_logger().info(f'Using config package: {bringup_package} ({share_dir})')
 
-        subscriber_config = self._load_yaml_config(share_dir / 'config' / 'subscribers.yaml')
-        if subscriber_config is None:
-            return TransitionCallbackReturn.ERROR
-        self.subscriber_manager = SubscriptionManager(
-            self, config=subscriber_config, kb=self.kb, templates_dir=share_dir / 'templates'
+        # --- CONFIG LOAD ---
+
+        self.config = self._load_kb_config(share_dir / 'config' / 'kb_params.yaml')
+
+        # --- KB INIT ---
+        self.kb = TriplestarKnowledgeBase(
+            store_path=self.config.store_path,
+            logger=self.get_logger(),
+            base_iri=self.config.base_iri,
         )
 
-        query_services_config = self._load_yaml_config(share_dir / 'config' / 'query_services.yaml')
-        if query_services_config is None:
+        self.get_logger().info(f'Using store path: {self.kb.store_path}')
+
+        # --- PRELOAD ---
+        if not self._preload_files(share_dir / 'preload'):
             return TransitionCallbackReturn.ERROR
+
+        # --- SUBSCRIBERS ---
+        subscriber_config = self._load_yaml_config(share_dir / 'config' / 'subscribers.yaml')
+        self.subscriber_manager = SubscriptionManager(
+            self,
+            config=subscriber_config,
+            kb=self.kb,
+            templates_dir=share_dir / 'templates',
+        )
+
+        # --- QUERY SERVICES ---
+        query_config = self._load_yaml_config(share_dir / 'config' / 'query_services.yaml')
         self.query_service_manager = QueryServiceManager(
-            self, config=query_services_config, kb=self.kb, queries_dir=share_dir / 'queries'
+            self,
+            config=query_config,
+            kb=self.kb,
+            queries_dir=share_dir / 'queries',
         )
 
         self.get_logger().info('KB node configured successfully')
@@ -137,25 +144,27 @@ class TriplestarKBNode(LifecycleNode):
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
 
-    def _load_yaml_config(self, config_path: Path) -> Optional[dict]:
-        """Load a YAML config file from the given path."""
+    def _load_yaml_config(self, path: Path) -> dict:
         try:
-            return yaml.safe_load(config_path.read_text()) or {}
-        except FileNotFoundError:
-            self.get_logger().error(f'Config file not found: {config_path}')
-            return None
-        except yaml.YAMLError as e:
-            self.get_logger().error(f'Failed to parse config file {config_path}: {e}')
-            return None
+            data = yaml.safe_load(path.read_text())
+        except Exception as e:
+            raise RuntimeError(f'Failed to load YAML: {path}') from e
+
+        if data is None:
+            return {}
+
+        if not isinstance(data, dict):
+            raise TypeError(f'Expected dict in YAML: {path}')
+
+        return data
 
     def _preload_files(self, preload_dir: Path) -> bool:
         """Preload TTL files from the given preload directory."""
         if self.kb is None:
-            self.get_logger().error('KB interface not initialized')
-            return False
+            raise RuntimeError('KB interface not initialized')
 
-        # Strip the [''] placeholder ROS2 uses as the default for string array parameters.
-        preload_files = [f for f in self.get_parameter('preload_files').value if f]
+        preload_files = self.config.preload_files
+
         if not preload_files:
             self.get_logger().info('No preload files configured, skipping preload')
             return True
@@ -174,15 +183,15 @@ class TriplestarKBNode(LifecycleNode):
             self.get_logger().warn(f'No valid .ttl files found in {preload_dir}')
             return False
 
-        self.get_logger().info(f'Preloading {len(file_paths)} .ttl files from {preload_dir}')
-        loaded_count = self.kb.load_files(file_paths)
+        loaded = self.kb.load_files(file_paths)
 
-        if loaded_count == 0:
-            self.get_logger().warn(f'No files were successfully loaded from {preload_dir}')
+        if loaded == 0:
+            self.get_logger().warn(f'No files were loaded from {preload_dir}')
             return False
 
-        self.get_logger().info(f'Successfully preloaded {loaded_count} files from {preload_dir}')
+        self.get_logger().info(f'Successfully preloaded {loaded} files from {preload_dir}')
         self.get_logger().info(f'Amount of triples in the KB: {self.kb.count_triples()}')
+
         return True
 
     def query_callback(
@@ -201,3 +210,16 @@ class TriplestarKBNode(LifecycleNode):
         response.success = response.result != ''
 
         return response
+
+    def _load_kb_config(self, path: Path) -> KBConfig:
+        try:
+            data = yaml.safe_load(path.read_text())
+        except Exception as e:
+            raise RuntimeError(f'Failed to load KB config from {path}: {e}')
+
+        if not isinstance(data, dict):
+            raise TypeError(
+                f'Invalid KB config from {path}: expected a dictionary, got {type(data)}'
+            )
+
+        return KBConfig.model_validate(data)
