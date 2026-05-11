@@ -2,6 +2,14 @@
 
 TriplestarKB is a ROS2-enabled knowledge base, backed by the [oxigraph](https://github.com/oxigraph/oxigraph) SPARQL graph database.
 
+## Generating your own bringup package
+
+To generate your own bringup package, run the following command from your `/src` folder (assuming that's where you cloned this repo). Make sure to replace `{your_custom_bringup_name}` with the actual name you want for your package (e.g., `my_custom_triplestar_bringup`):
+
+```bash
+copier copy triplestar_kb/bringup_template {your_custom_bringup_name}
+```
+
 ## ROS to RDF conversions
 
 ROS(2) defines its own set of interfaces (messages and services) for representing data like timestamps, points, integers, floats, polygons etc.
