@@ -3,6 +3,7 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     EmitEvent,
+    RegisterEventHandler,
 )
 from launch.conditions import IfCondition
 from launch.events import matches_action
@@ -10,6 +11,7 @@ from launch.substitutions import (
     LaunchConfiguration,
 )
 from launch_ros.actions import LifecycleNode, Node
+from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 
 
@@ -46,10 +48,19 @@ def generate_launch_description():
         )
     )
 
-    triplestar_core_node_activate_event = EmitEvent(
-        event=ChangeState(
-            lifecycle_node_matcher=matches_action(triplestar_core_node),
-            transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,  # type: ignore
+    triplestar_core_node_activate_event = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=triplestar_core_node,
+            start_state='configuring',
+            goal_state='inactive',
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(triplestar_core_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
+                    )
+                )
+            ],
         )
     )
 
