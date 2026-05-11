@@ -31,6 +31,7 @@ class InsertionSubscriber:
     def _callback(self, msg):
         try:
             query = self._template.render(msg=msg)
-            self._update_fn(query)
+            if query:
+                self._update_fn(query)
         except Exception as e:
             self._logger.error(f'Insertion failed for {self._topic}: {e}')
