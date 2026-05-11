@@ -1,9 +1,8 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import yaml
 from ament_index_python import get_package_share_directory
-from pydantic import BaseModel, Field
 from rclpy.lifecycle import (
     LifecycleNode,
     LifecycleState,
@@ -11,15 +10,10 @@ from rclpy.lifecycle import (
 )
 from triplestar_msgs.srv import SPARQLQuery
 
+from triplestar_core.config.schemas import KBConfig, QueryServicesConfig, SubscribersConfig
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
-
-
-class KBConfig(BaseModel):
-    store_path: Path
-    preload_files: List[str] = Field(default_factory=list)
-    base_iri: str
 
 
 class TriplestarKBNode(LifecycleNode):
@@ -56,7 +50,6 @@ class TriplestarKBNode(LifecycleNode):
         self.get_logger().info(f'Using config package: {bringup_package} ({share_dir})')
 
         # --- CONFIG LOAD ---
-
         try:
             self.config = self._load_kb_config(share_dir / 'config' / 'kb_params.yaml')
         except Exception as e:
@@ -77,7 +70,7 @@ class TriplestarKBNode(LifecycleNode):
             return TransitionCallbackReturn.ERROR
 
         # --- SUBSCRIBERS ---
-        subscriber_config = self._load_yaml_config(share_dir / 'config' / 'subscribers.yaml')
+        subscriber_config = self._load_subscribers_config(share_dir / 'config' / 'subscribers.yaml')
         self.subscriber_manager = SubscriptionManager(
             self,
             config=subscriber_config,
@@ -86,7 +79,7 @@ class TriplestarKBNode(LifecycleNode):
         )
 
         # --- QUERY SERVICES ---
-        query_config = self._load_yaml_config(share_dir / 'config' / 'query_services.yaml')
+        query_config = self._load_query_service_config(share_dir / 'config' / 'query_services.yaml')
         self.query_service_manager = QueryServiceManager(
             self,
             config=query_config,
@@ -148,20 +141,6 @@ class TriplestarKBNode(LifecycleNode):
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
 
-    def _load_yaml_config(self, path: Path) -> dict:
-        try:
-            data = yaml.safe_load(path.read_text())
-        except Exception as e:
-            raise RuntimeError(f'Failed to load YAML: {path}') from e
-
-        if data is None:
-            return {}
-
-        if not isinstance(data, dict):
-            raise TypeError(f'Expected dict in YAML: {path}')
-
-        return data
-
     def _preload_files(self, preload_dir: Path) -> bool:
         """Preload TTL files from the given preload directory."""
         if self.kb is None:
@@ -215,15 +194,28 @@ class TriplestarKBNode(LifecycleNode):
 
         return response
 
-    def _load_kb_config(self, path: Path) -> KBConfig:
+    def _load_yaml(self, path: Path) -> dict:
         try:
             data = yaml.safe_load(path.read_text())
         except Exception as e:
-            raise RuntimeError(f'Failed to load KB config from {path}: {e}')
+            raise RuntimeError(f'Failed to load YAML: {path}') from e
+
+        if data is None:
+            return {}
 
         if not isinstance(data, dict):
-            raise TypeError(
-                f'Invalid KB config from {path}: expected a dictionary, got {type(data)}'
-            )
+            raise TypeError(f'Expected dict in YAML: {path}')
 
+        return data
+
+    def _load_kb_config(self, path: Path) -> KBConfig:
+        data = self._load_yaml(path)
         return KBConfig.model_validate(data)
+
+    def _load_subscribers_config(self, path: Path) -> SubscribersConfig:
+        data = self._load_yaml(path)
+        return SubscribersConfig.model_validate(data)
+
+    def _load_query_service_config(self, path: Path) -> QueryServicesConfig:
+        data = self._load_yaml(path)
+        return QueryServicesConfig.model_validate(data)

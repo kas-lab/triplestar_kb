@@ -1,17 +1,18 @@
 # Each entry creates a ROS service backed by a SPARQL query file from the
 # queries/ directory.
 
-count_triples_reasoning:
-  query_file: count_triples.sparql
-  reasoning: true
+query_services:
+  count_triples_reasoning:
+    query_file: count_triples.sparql
+    reasoning: true
 
-count_triples:
-  query_file: count_triples.sparql
-  reasoning: false
+  count_triples:
+    query_file: count_triples.sparql
+    reasoning: false
 
-all_triples:
-  query_file: get_all_triples.sparql
-  reasoning: true
+  all_triples:
+    query_file: get_all_triples.sparql
+    reasoning: true
 
-# robot_pose:
-#     query_file: get_robot_pose.sparql
+  # robot_pose:
+  #     query_file: get_robot_pose.sparql

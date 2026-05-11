@@ -7,24 +7,6 @@ from geometry_msgs.msg import TransformStamped
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 from rclpy.time import Time
-from ros2topic.api import get_msg_class
-
-
-def wait_for_topic(
-    node, topic_name: str, timeout_sec: float = 2.0, poll_interval: float = 0.2
-) -> bool:
-    logger = node.get_logger()
-    start = time.time()
-    while rclpy.ok():
-        if topic_name in [t[0] for t in node.get_topic_names_and_types()]:
-            logger.info(f'Topic {topic_name} is now available.')
-            return True
-        if time.time() - start > timeout_sec:
-            logger.error(f'Timeout waiting for topic {topic_name}.')
-            return False
-        logger.info(f'Waiting for topic {topic_name}...')
-        time.sleep(poll_interval)
-    return False
 
 
 class BaseLatestSubscriber:
@@ -42,21 +24,15 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
         self,
         node: Node | LifecycleNode,
         topic: str,
+        msg_type,
         max_age_sec: float = 2.0,
         msg_field_name: Optional[str] = None,
     ):
         super().__init__(node, max_age_sec)
-        self._topic_name = topic
+        self._topic = topic
         self._msg_field_name = msg_field_name
         self._latest_msg = None
         self._latest_time = None
-
-        if not wait_for_topic(node, self._topic_name):
-            raise RuntimeError(f'Topic {self._topic_name} not available')
-
-        msg_type = get_msg_class(node, self._topic_name)
-        if msg_type is None:
-            raise RuntimeError(f'Unable to determine message class for topic: {self._topic_name}')
 
         if self._msg_field_name and not hasattr(msg_type, self._msg_field_name):
             raise RuntimeError(
@@ -64,16 +40,16 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
             )
 
         self._subscription = self._node.create_subscription(
-            msg_type, self._topic_name, self._callback, 10
+            msg_type, self._topic, self._callback, 10
         )
-        self._logger.info(f'Subscribed to {self._topic_name}')
+        self._logger.info(f'Subscribed to {self._topic}')
 
     def _callback(self, msg):
         self._latest_msg = msg
         self._latest_time = (
             msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             if hasattr(msg, 'header') and hasattr(msg.header, 'stamp')
-            else time.time()
+            else self._node.get_clock().now().nanoseconds * 1e-9
         )
 
     def get_latest(self, *args, **kwargs):

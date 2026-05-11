@@ -1,9 +1,6 @@
 from jinja2 import Template
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
-from ros2topic.api import get_msg_class
-
-from triplestar_core.subscriptions.query_time_subscriber import wait_for_topic
 
 
 class InsertionSubscriber:
@@ -13,21 +10,22 @@ class InsertionSubscriber:
         topic: str,
         template: Template,
         update_fn,
+        msg_type,
     ):
         self._node = node
         self._logger = node.get_logger().get_child('InsertionSubscriber')
-        self._topic = topic
-        self._update_fn = update_fn
+
         self._template = template
+        self._update_fn = update_fn
+        self._topic = topic
 
-        if not wait_for_topic(node, self._topic):
-            raise RuntimeError(f'Topic {self._topic} not available')
+        self._sub = node.create_subscription(
+            msg_type,
+            self._topic,
+            self._callback,
+            10,
+        )
 
-        msg_type = get_msg_class(node, self._topic)
-        if msg_type is None:
-            raise RuntimeError(f'Unable to determine message class for {self._topic}')
-
-        self._sub = node.create_subscription(msg_type, self._topic, self._callback, 10)
         self._logger.info(f'Subscribed to {self._topic}')
 
     def _callback(self, msg):

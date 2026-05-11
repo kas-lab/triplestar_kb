@@ -1,19 +1,26 @@
 from pathlib import Path
 
+from triplestar_core.config.schemas import QueryServicesConfig
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service import FileQueryService
 
 
 class QueryServiceManager:
-    def __init__(self, node, config: dict, kb: TriplestarKnowledgeBase, queries_dir: Path):
+    def __init__(
+        self,
+        node,
+        config: QueryServicesConfig,
+        kb: TriplestarKnowledgeBase,
+        queries_dir: Path,
+    ):
         self.node = node
         self.logger = node.get_logger().get_child('query_service_manager')
 
         self.query_services: dict[str, FileQueryService] = {}
 
-        for name, srv_config in config.items():
+        for name, srv_config in config.query_services.items():
             try:
-                query_file_name = srv_config.get('query_file')
+                query_file_name = srv_config.query_file
                 if not query_file_name:
                     raise KeyError(f'No query_file specified for service "{name}"')
 
@@ -21,7 +28,7 @@ class QueryServiceManager:
                 if not query_file.exists():
                     raise FileNotFoundError(f'Query file not found: {query_file}')
 
-                reasoning_enabled = srv_config.get('reasoning', False)
+                reasoning_enabled = srv_config.reasoning
 
                 def query_fn(sparql: str, reasoning=reasoning_enabled) -> str:
                     return kb.query_json(sparql, reasoning=reasoning)

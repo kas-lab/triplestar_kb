@@ -1,9 +1,20 @@
+import time
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, Type
 
+import rclpy
 import tf2_ros
 from jinja2 import Environment, FileSystemLoader
+from rclpy.lifecycle import LifecycleNode
+from rclpy.node import Node
+from ros2topic.api import get_msg_class
 
+from triplestar_core.config.schemas import (
+    InsertionSubscriberConfig,
+    QueryTimeTFSubscriberConfig,
+    QueryTimeTopicSubscriberConfig,
+    SubscribersConfig,
+)
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.msg_to_rdf import ros_msg_to_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
@@ -19,7 +30,13 @@ def _rdf_filter(value) -> str:
 
 
 class SubscriptionManager:
-    def __init__(self, node, config: dict, kb: TriplestarKnowledgeBase, templates_dir: Path):
+    def __init__(
+        self,
+        node: Node | LifecycleNode,
+        config: SubscribersConfig,
+        kb: TriplestarKnowledgeBase,
+        templates_dir: Path,
+    ):
         self.node = node
         self.logger = node.get_logger().get_child('subscriber_manager')
 
@@ -33,11 +50,13 @@ class SubscriptionManager:
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.filters['rdf'] = _rdf_filter
 
-        update_fn = self._make_update_fn(kb)
-
-        self._load_topic_query_subs(config.get('query_time_topic_subscribers', {}))
-        self._load_tf_query_subs(config.get('query_time_tf_subscribers', {}))
-        self._load_insertion_subs(config.get('insertion_subscribers', {}), env, update_fn)
+        self._load_topic_query_subs(config.query_time_topic_subscribers)
+        self._load_tf_query_subs(config.query_time_tf_subscribers)
+        self._load_insertion_subs(
+            config.insertion_subscribers,
+            env,
+            lambda sparql: kb.update(sparql),
+        )
 
         # Register query-time subscribers as custom SPARQL functions
         all_query_subs = {**self.topic_query_subs, **self.tf_query_subs}
@@ -54,71 +73,82 @@ class SubscriptionManager:
             f'insertion: {list(self.insertion_subs.keys())}'
         )
 
-    def _make_update_fn(self, kb: TriplestarKnowledgeBase) -> Callable[[str], None]:
-        def update_fn(sparql: str) -> None:
-            kb.update(sparql)
+    def try_msg_class(self, topic: str, timeout_sec: float = 2.0) -> Optional[Type]:
+        start = time.time()
+        self.logger.info(f"Waiting for message class for topic '{topic}'...")
 
-        return update_fn
+        while rclpy.ok():
+            if topic in [t[0] for t in self.node.get_topic_names_and_types()]:
+                break
 
-    def _load_topic_query_subs(self, config: dict) -> None:
-        for name, sub_cfg in config.items():
+            if time.time() - start > timeout_sec:
+                self.logger.warning(f"Timeout waiting for message class for topic '{topic}'")
+                return None
+
+            time.sleep(0.2)
+
+        msg_type = get_msg_class(self.node, topic, include_hidden_topics=True)
+
+        return msg_type if msg_type else None
+
+    def _load_topic_query_subs(self, config: dict[str, QueryTimeTopicSubscriberConfig]) -> None:
+        for name, sub in config.items():
+            msg_type = self.try_msg_class(sub.topic)
+            if msg_type is None:
+                self.logger.error(f'Unable to determine message class for topic: {sub.topic}')
+                continue
+
             try:
-                topic = self._require(
-                    sub_cfg, 'topic', context=f'query_time_topic_subscribers.{name}'
-                )
                 self.topic_query_subs[name] = TopicLatestSubscriber(
                     node=self.node,
-                    topic=topic,
-                    max_age_sec=sub_cfg.get('max_age_sec', 2.0),
-                    msg_field_name=sub_cfg.get('msg_field_name'),
+                    topic=sub.topic,
+                    msg_type=msg_type,
+                    msg_field_name=sub.msg_field_name,
                 )
             except (KeyError, RuntimeError) as e:
                 self.logger.error(f'Failed to create topic query subscriber "{name}": {e}')
 
-    def _load_tf_query_subs(self, config: dict) -> None:
-        for name, sub_cfg in config.items():
+    def _load_tf_query_subs(
+        self,
+        config: dict[str, QueryTimeTFSubscriberConfig],
+    ) -> None:
+        for name, sub in config.items():
             try:
-                from_frame = self._require(
-                    sub_cfg, 'from_frame', context=f'query_time_tf_subscribers.{name}'
-                )
-                to_frame = self._require(
-                    sub_cfg, 'to_frame', context=f'query_time_tf_subscribers.{name}'
-                )
                 self.tf_query_subs[name] = TransformLatestSubscriber(
                     node=self.node,
-                    from_frame=from_frame,
-                    to_frame=to_frame,
+                    from_frame=sub.from_frame,
+                    to_frame=sub.to_frame,
                     buffer=self._buffer,
                     listener=self._listener,
-                    max_age_sec=sub_cfg.get('max_age_sec', 2.0),
                 )
             except (KeyError, RuntimeError) as e:
                 self.logger.error(f'Failed to create TF query subscriber "{name}": {e}')
 
-    def _load_insertion_subs(self, config: dict, env: Environment, update_fn: Callable) -> None:
-        for name, sub_cfg in config.items():
+    def _load_insertion_subs(
+        self,
+        config: dict[str, InsertionSubscriberConfig],
+        env: Environment,
+        update_fn: Callable,
+    ) -> None:
+        for name, sub in config.items():
             try:
-                topic = self._require(sub_cfg, 'topic', context=f'insertion_subscribers.{name}')
-                template_name = self._require(
-                    sub_cfg, 'template', context=f'insertion_subscribers.{name}'
-                )
+                template = env.get_template(sub.template)
+            except Exception as e:
+                self.logger.error(f'Unable to load template "{sub.template}": {e}')
+                continue
 
-                try:
-                    template = env.get_template(template_name)
-                except Exception as e:
-                    raise RuntimeError(f'Unable to load template "{template_name}": {e}')
+            msg_type = self.try_msg_class(sub.topic)
+            if msg_type is None:
+                self.logger.error(f'Unable to determine message class for topic: {sub.topic}')
+                continue
 
+            try:
                 self.insertion_subs[name] = InsertionSubscriber(
                     node=self.node,
-                    topic=topic,
+                    topic=sub.topic,
                     template=template,
                     update_fn=update_fn,
+                    msg_type=msg_type,
                 )
-            except (KeyError, RuntimeError) as e:
+            except Exception as e:
                 self.logger.error(f'Failed to create insertion subscriber "{name}": {e}')
-
-    @staticmethod
-    def _require(cfg: dict, key: str, context: str) -> str:
-        if key not in cfg or not cfg[key]:
-            raise KeyError(f'Missing required field "{key}" in {context}')
-        return cfg[key]
