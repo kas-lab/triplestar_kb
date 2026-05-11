@@ -25,6 +25,7 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
         node: Node | LifecycleNode,
         topic: str,
         msg_type,
+        callback_group,
         max_age_sec: float = 2.0,
         msg_field_name: Optional[str] = None,
     ):
@@ -40,7 +41,11 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
             )
 
         self._subscription = self._node.create_subscription(
-            msg_type, self._topic, self._callback, 10
+            msg_type,
+            self._topic,
+            self._callback,
+            10,
+            callback_group=callback_group,
         )
         self._logger.info(f'Subscribed to {self._topic}')
 

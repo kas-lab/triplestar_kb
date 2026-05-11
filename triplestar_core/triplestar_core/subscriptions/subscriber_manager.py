@@ -5,6 +5,7 @@ from typing import Callable, Optional, Type
 import rclpy
 import tf2_ros
 from jinja2 import Environment, FileSystemLoader
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 from ros2topic.api import get_msg_class
@@ -40,6 +41,8 @@ class SubscriptionManager:
         self.node = node
         self.logger = node.get_logger().get_child('subscriber_manager')
 
+        self.subscriber_cb_group = ReentrantCallbackGroup()
+
         self._buffer = tf2_ros.Buffer()
         self._listener = tf2_ros.TransformListener(self._buffer, node)
 
@@ -50,7 +53,9 @@ class SubscriptionManager:
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.filters['rdf'] = _rdf_filter
 
-        self._load_topic_query_subs(config.query_time_topic_subscribers)
+        self._load_topic_query_subs(
+            config.query_time_topic_subscribers,
+        )
         self._load_tf_query_subs(config.query_time_tf_subscribers)
         self._load_insertion_subs(
             config.insertion_subscribers,
@@ -104,6 +109,7 @@ class SubscriptionManager:
                     topic=sub.topic,
                     msg_type=msg_type,
                     msg_field_name=sub.msg_field_name,
+                    callback_group=self.subscriber_cb_group,
                 )
             except (KeyError, RuntimeError) as e:
                 self.logger.error(f'Failed to create topic query subscriber "{name}": {e}')
@@ -149,6 +155,7 @@ class SubscriptionManager:
                     template=template,
                     update_fn=update_fn,
                     msg_type=msg_type,
+                    callback_group=self.subscriber_cb_group,
                 )
             except Exception as e:
                 self.logger.error(f'Failed to create insertion subscriber "{name}": {e}')

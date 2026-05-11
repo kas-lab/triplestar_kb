@@ -11,6 +11,7 @@ class InsertionSubscriber:
         template: Template,
         update_fn,
         msg_type,
+        callback_group,
     ):
         self._node = node
         self._logger = node.get_logger().get_child('InsertionSubscriber')
@@ -24,6 +25,7 @@ class InsertionSubscriber:
             self._topic,
             self._callback,
             10,
+            callback_group=callback_group,
         )
 
         self._logger.info(f'Subscribed to {self._topic}')
