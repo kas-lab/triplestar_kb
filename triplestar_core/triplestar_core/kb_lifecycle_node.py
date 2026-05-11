@@ -57,7 +57,11 @@ class TriplestarKBNode(LifecycleNode):
 
         # --- CONFIG LOAD ---
 
-        self.config = self._load_kb_config(share_dir / 'config' / 'kb_params.yaml')
+        try:
+            self.config = self._load_kb_config(share_dir / 'config' / 'kb_params.yaml')
+        except Exception as e:
+            self.get_logger().error(f'Failed to load KB config: {e}')
+            return TransitionCallbackReturn.ERROR
 
         # --- KB INIT ---
         self.kb = TriplestarKnowledgeBase(
