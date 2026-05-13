@@ -4,7 +4,7 @@ from typing import Callable, Optional, Type
 
 import rclpy
 import tf2_ros
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
@@ -30,6 +30,11 @@ def _rdf_filter(value) -> str:
     return str(literal) if literal is not None else repr(value)
 
 
+# Returns a function that queries the latest message from the subscriber and converts it to an RDF literal, which can be registered in the KB.
+def make_query_fn(sub):
+    return lambda: ros_msg_to_literal(sub.get_latest_msg())
+
+
 class SubscriptionManager:
     def __init__(
         self,
@@ -50,7 +55,11 @@ class SubscriptionManager:
         self.tf_query_subs: dict[str, TransformLatestSubscriber] = {}
         self.insertion_subs: dict[str, InsertionSubscriber] = {}
 
-        env = Environment(loader=FileSystemLoader(templates_dir))
+        env = Environment(
+            loader=FileSystemLoader(templates_dir),
+            autoescape=False,
+            undefined=StrictUndefined,
+        )
         env.filters['rdf'] = _rdf_filter
 
         self._load_topic_query_subs(
@@ -67,10 +76,7 @@ class SubscriptionManager:
         all_query_subs = {**self.topic_query_subs, **self.tf_query_subs}
 
         for name, sub in all_query_subs.items():
-            kb.add_query_time_function(
-                name,
-                lambda s=sub: ros_msg_to_literal(s.get_latest()),
-            )
+            kb.add_query_time_function(name, make_query_fn(sub))
 
         self.logger.info(
             f'SubscriberManager initialized — '
@@ -139,7 +145,7 @@ class SubscriptionManager:
         for name, sub in config.items():
             try:
                 template = env.get_template(sub.template)
-            except Exception as e:
+            except TemplateNotFound as e:
                 self.logger.error(f'Unable to load template "{sub.template}": {e}')
                 continue
 
