@@ -39,7 +39,6 @@ class TriplestarKnowledgeBase:
             '': self.base_iri,
         }
 
-        self.reasoner = reasonable.PyReasoner()  # type:ignore
         self.reasoned_graph = NamedNode(f'{self.base_iri}/reasoned-graph')
 
         self.custom_functions: dict[NamedNode, Callable] = {}
@@ -57,6 +56,8 @@ class TriplestarKnowledgeBase:
 
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
+
+        self.reasoner = reasonable.PyReasoner()  # type:ignore
 
         # filter out RDF* triples (reasoner does not support RDF*)
         def is_plain_triple(t):
