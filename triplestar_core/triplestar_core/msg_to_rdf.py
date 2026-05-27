@@ -1,39 +1,40 @@
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional, Type
+from datetime import datetime
+from datetime import timezone
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Type
 
 from builtin_interfaces.msg import Time as ROSTime
-from geometry_msgs.msg import (
-    Point,
-    Point32,
-    PointStamped,
-    Polygon,
-    PolygonInstance,
-    PolygonInstanceStamped,
-    PolygonStamped,
-    Pose,
-    Vector3,
-    Vector3Stamped,
-)
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point32
+from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import Polygon
+from geometry_msgs.msg import PolygonInstance
+from geometry_msgs.msg import PolygonInstanceStamped
+from geometry_msgs.msg import PolygonStamped
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Vector3
+from geometry_msgs.msg import Vector3Stamped
 from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import NamedNode
 from shapely import Point as ShapelyPoint
 from shapely import Polygon as ShapelyPolygon
-from std_msgs.msg import (
-    Bool,
-    Byte,
-    Char,
-    Float32,
-    Float64,
-    Int8,
-    Int16,
-    Int32,
-    Int64,
-    String,
-    UInt8,
-    UInt16,
-    UInt32,
-    UInt64,
-)
+from std_msgs.msg import Bool
+from std_msgs.msg import Byte
+from std_msgs.msg import Char
+from std_msgs.msg import Float32
+from std_msgs.msg import Float64
+from std_msgs.msg import Int8
+from std_msgs.msg import Int16
+from std_msgs.msg import Int32
+from std_msgs.msg import Int64
+from std_msgs.msg import String
+from std_msgs.msg import UInt8
+from std_msgs.msg import UInt16
+from std_msgs.msg import UInt32
+from std_msgs.msg import UInt64
 
 GEO = 'http://www.opengis.net/ont/geosparql#'
 XSD = 'http://www.w3.org/2001/XMLSchema#'

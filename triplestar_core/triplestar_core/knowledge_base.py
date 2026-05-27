@@ -1,9 +1,16 @@
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable
+from typing import List
 
 import reasonable
-from oxrdflib._converter import from_ox, to_ox
-from pyoxigraph import DefaultGraph, NamedNode, Quad, QueryResultsFormat, RdfFormat, Store
+from oxrdflib._converter import from_ox
+from oxrdflib._converter import to_ox
+from pyoxigraph import DefaultGraph
+from pyoxigraph import NamedNode
+from pyoxigraph import Quad
+from pyoxigraph import QueryResultsFormat
+from pyoxigraph import RdfFormat
+from pyoxigraph import Store
 
 
 class TriplestarKnowledgeBase:

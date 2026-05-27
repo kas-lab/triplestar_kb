@@ -1,15 +1,12 @@
 from launch import LaunchDescription
-from launch.actions import (
-    DeclareLaunchArgument,
-    EmitEvent,
-    RegisterEventHandler,
-)
+from launch.actions import DeclareLaunchArgument
+from launch.actions import EmitEvent
+from launch.actions import RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.events import matches_action
-from launch.substitutions import (
-    LaunchConfiguration,
-)
-from launch_ros.actions import LifecycleNode, Node
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import LifecycleNode
+from launch_ros.actions import Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 from lifecycle_msgs.msg import Transition

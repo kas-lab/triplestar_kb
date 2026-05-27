@@ -1,9 +1,17 @@
 import hashlib
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import Optional
+from typing import Union
 
 from graphviz import Digraph
-from pyoxigraph import BlankNode, Literal, NamedNode, Quad, Store, Triple
+from pyoxigraph import BlankNode
+from pyoxigraph import Literal
+from pyoxigraph import NamedNode
+from pyoxigraph import Quad
+from pyoxigraph import Store
+from pyoxigraph import Triple
 
 
 @dataclass

@@ -10,7 +10,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from triplestar_viz.core import RDFLoader, RDFStarVisualizer
+from triplestar_viz.core import RDFLoader
+from triplestar_viz.core import RDFStarVisualizer
 
 
 def infer_format_from_extension(path: Path) -> str:

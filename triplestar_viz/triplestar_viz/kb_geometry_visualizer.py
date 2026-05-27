@@ -5,7 +5,8 @@ from geometry_msgs.msg import Point
 from rclpy.node import Node
 from shapely import wkt
 from triplestar_msgs.srv import SPARQLQuery
-from visualization_msgs.msg import Marker, MarkerArray
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
 
 
 class KBGeometryVisualizer(Node):
