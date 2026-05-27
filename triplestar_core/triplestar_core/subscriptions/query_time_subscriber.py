@@ -1,5 +1,6 @@
 import time
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 
 import rclpy
 import tf2_ros
