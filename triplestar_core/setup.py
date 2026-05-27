@@ -13,7 +13,6 @@ setup(
         ('share/' + package_name, ['package.xml']),
     ],
     install_requires=[
-        'returns>=0.22.0',
         'shapely',
         'pyoxigraph',
         'reasonable',
