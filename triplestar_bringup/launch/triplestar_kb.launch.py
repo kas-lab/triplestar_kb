@@ -1,4 +1,3 @@
-import lifecycle_msgs
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -13,6 +12,7 @@ from launch.substitutions import (
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
+from lifecycle_msgs.msg import Transition
 
 
 def generate_launch_description():
@@ -44,7 +44,7 @@ def generate_launch_description():
     triplestar_core_node_config_event = EmitEvent(
         event=ChangeState(
             lifecycle_node_matcher=matches_action(triplestar_core_node),
-            transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+            transition_id=Transition.TRANSITION_CONFIGURE,
         )
     )
 
@@ -57,7 +57,7 @@ def generate_launch_description():
                 EmitEvent(
                     event=ChangeState(
                         lifecycle_node_matcher=matches_action(triplestar_core_node),
-                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
+                        transition_id=Transition.TRANSITION_ACTIVATE,
                     )
                 )
             ],
