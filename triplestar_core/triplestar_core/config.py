@@ -1,13 +1,16 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class KBConfig(BaseModel):
     store_path: Path
     preload_files: List[str] = Field(default_factory=list)
     base_iri: str
+    clear_on_startup: bool = False
 
 
 class InsertionSubscriberConfig(BaseModel):

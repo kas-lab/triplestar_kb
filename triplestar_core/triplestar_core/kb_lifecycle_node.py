@@ -8,9 +8,9 @@ from rclpy.lifecycle import LifecycleState
 from rclpy.lifecycle import TransitionCallbackReturn
 from triplestar_msgs.srv import SPARQLQuery
 
-from triplestar_core.config.schemas import KBConfig
-from triplestar_core.config.schemas import QueryServicesConfig
-from triplestar_core.config.schemas import SubscribersConfig
+from triplestar_core.config import KBConfig
+from triplestar_core.config import QueryServicesConfig
+from triplestar_core.config import SubscribersConfig
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager

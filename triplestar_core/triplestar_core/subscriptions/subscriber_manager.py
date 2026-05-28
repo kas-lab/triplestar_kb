@@ -15,10 +15,10 @@ from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 from ros2topic.api import get_msg_class
 
-from triplestar_core.config.schemas import InsertionSubscriberConfig
-from triplestar_core.config.schemas import QueryTimeTFSubscriberConfig
-from triplestar_core.config.schemas import QueryTimeTopicSubscriberConfig
-from triplestar_core.config.schemas import SubscribersConfig
+from triplestar_core.config import InsertionSubscriberConfig
+from triplestar_core.config import QueryTimeTFSubscriberConfig
+from triplestar_core.config import QueryTimeTopicSubscriberConfig
+from triplestar_core.config import SubscribersConfig
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.msg_to_rdf import ros_msg_to_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
