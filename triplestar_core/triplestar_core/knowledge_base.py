@@ -1,3 +1,4 @@
+from inspect import signature
 from pathlib import Path
 from typing import Callable
 from typing import List
@@ -33,26 +34,27 @@ class TriplestarKnowledgeBase:
         self.base_iri = base_iri
         self.function_uri_base: str = f'{self.base_iri}/functions/'
         self.query_time_uri_base: str = f'{self.base_iri}/query-time/'
+        self.reasoned_graph = NamedNode(f'{self.base_iri}/reasoned-graph')
+
+        self.fn_registry: dict[NamedNode, Callable] = {}
+
         self.extra_iris = {
             'fn': self.function_uri_base,
             'qt': self.query_time_uri_base,
             '': self.base_iri,
         }
 
-        self.reasoned_graph = NamedNode(f'{self.base_iri}/reasoned-graph')
+    def _add_function(self, name: str, function: Callable, prefix: str):
+        uri = NamedNode(f'{self.extra_iris[prefix]}{name}')
+        self.fn_registry[uri] = function
+        params = ', '.join(signature(function).parameters.keys())
+        self.logger.info(f'Registered {uri}, call in SPARQL via {prefix}:{name}({params})')
 
-        self.custom_functions: dict[NamedNode, Callable] = {}
-
-    def _add_function(self, name: str, base_uri: str, function: Callable):
-        uri = NamedNode(f'{base_uri}{name}')
-        self.custom_functions[uri] = function
-        self.logger.info(f'Added custom function for {uri.value}()')
-
-    def add_custom_function(self, name: str, function: Callable):
-        self._add_function(name, self.function_uri_base, function)
+    def add_kb_function(self, name: str, function: Callable):
+        self._add_function(name, function, 'fn')
 
     def add_query_time_function(self, name: str, function: Callable):
-        self._add_function(name, self.query_time_uri_base, function)
+        self._add_function(name, function, 'qt')
 
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
@@ -102,7 +104,7 @@ class TriplestarKnowledgeBase:
                 query,
                 base_iri=self.base_iri,
                 prefixes=self.extra_iris,
-                custom_functions=self.custom_functions,
+                custom_functions=self.fn_registry,
             )
         except Exception as e:
             self.logger.error(f'Update failed: {e}')
@@ -117,7 +119,7 @@ class TriplestarKnowledgeBase:
                 query,
                 base_iri=self.base_iri,
                 prefixes=self.extra_iris,
-                custom_functions=self.custom_functions,
+                custom_functions=self.fn_registry,
                 use_default_graph_as_union=reasoning,
             )
             return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # type: ignore
