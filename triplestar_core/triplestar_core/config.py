@@ -10,7 +10,7 @@ class KBConfig(BaseModel):
     store_path: Path
     preload_files: List[str] = Field(default_factory=list)
     base_iri: str
-    clear_on_startup: bool = False
+    clear_on_startup: bool = True
 
 
 class InsertionSubscriberConfig(BaseModel):

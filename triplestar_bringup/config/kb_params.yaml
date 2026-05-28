@@ -4,6 +4,10 @@ store_path: "/tmp/triplestar_kb"
 # Base IRI for resolving relative IRIs and functions in the KB.
 base_iri: "http://triplestar.local"
 
+# Whether to clear the store at startup
+clear_on_startup: true
+
 # Turtle files to load at startup.
 preload_files:
   - example_data.ttl
+  - geometry.ttl

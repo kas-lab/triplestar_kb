@@ -65,6 +65,11 @@ class TriplestarKBNode(LifecycleNode):
 
         self.get_logger().info(f'Using store path: {self.kb.store_path}')
 
+        # --- CLEAR ON STARTUP ---
+        if self.config.clear_on_startup:
+            self.kb.clear()
+            self.get_logger().info('Cleared store on startup')
+
         # --- PRELOAD ---
         if not self._preload_files(share_dir / 'preload'):
             return TransitionCallbackReturn.ERROR
