@@ -1,3 +1,5 @@
+import importlib.util
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +13,7 @@ from triplestar_msgs.srv import SPARQLQuery
 from triplestar_core.config import KBConfig
 from triplestar_core.config import QueryServicesConfig
 from triplestar_core.config import SubscribersConfig
+from triplestar_core.functions import registry
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
@@ -86,6 +89,12 @@ class TriplestarKBNode(LifecycleNode):
             kb=self.kb,
             queries_dir=share_dir / 'queries',
         )
+
+        # --- KB FUNCTIONS ---
+        self._load_kb_functions(share_dir / 'functions')
+
+        for name, func in registry:
+            self.kb.add_kb_function(name, func)
 
         self.get_logger().info('KB node configured successfully')
         return TransitionCallbackReturn.SUCCESS
@@ -219,3 +228,21 @@ class TriplestarKBNode(LifecycleNode):
     def _load_query_service_config(self, path: Path) -> QueryServicesConfig:
         data = self._load_yaml(path)
         return QueryServicesConfig.model_validate(data)
+
+    def _load_kb_functions(self, folder: Path):
+        if not folder.is_dir():
+            self.get_logger().warn(f'Functions directory {folder} does not exist')
+            return
+
+        for file in folder.glob('*.py'):
+            module_name = file.stem
+            spec = importlib.util.spec_from_file_location(module_name, file)
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
+                self.get_logger().info(f'Loaded KB functions from {file}')
+            else:
+                self.get_logger().error(f'Failed to load KB functions from {file}')
+
+        self.get_logger().info(f'KB functions loaded: {registry}')
