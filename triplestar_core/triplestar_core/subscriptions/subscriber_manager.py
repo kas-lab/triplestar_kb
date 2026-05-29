@@ -20,20 +20,20 @@ from triplestar_core.config import QueryTimeTFSubscriberConfig
 from triplestar_core.config import QueryTimeTopicSubscriberConfig
 from triplestar_core.config import SubscribersConfig
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
-from triplestar_core.msg_to_rdf import ros_msg_to_literal
+from triplestar_core.msg_to_rdf import to_rdf_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TopicLatestSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TransformLatestSubscriber
 
 
 def _rdf_filter(value) -> str:
-    literal = ros_msg_to_literal(value)
+    literal = to_rdf_literal(value)
     return str(literal) if literal is not None else repr(value)
 
 
 # Returns a function that queries the latest message from the subscriber and converts it to an RDF literal, which can be registered in the KB.
 def make_query_fn(sub):
-    return lambda: ros_msg_to_literal(sub.get_latest_msg())
+    return lambda: to_rdf_literal(sub.get_latest_msg())
 
 
 class SubscriptionManager:

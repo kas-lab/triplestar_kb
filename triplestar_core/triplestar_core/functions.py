@@ -1,10 +1,11 @@
+import functools
 from types import FunctionType
 from typing import Optional
 
 from pyoxigraph import Literal as _RdfLiteral
 from pyoxigraph import NamedNode as _NamedNode
 
-from triplestar_core.msg_to_rdf import registry as _msg_to_rdf_converter
+from triplestar_core.msg_to_rdf import to_rdf_literal
 
 _RegisteredFunc = FunctionType
 
@@ -51,13 +52,14 @@ class FunctionRegistry:
 
     @staticmethod
     def _auto_convert_return(func: _RegisteredFunc) -> _RegisteredFunc:
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             result = func(*args, **kwargs)
             if result is None:
                 return None
             if isinstance(result, (_RdfLiteral, _NamedNode)):
                 return result
-            converted = _msg_to_rdf_converter.convert(result)
+            converted = to_rdf_literal(result)
             if converted is None:
                 raise TypeError(
                     f"Function '{func.__name__}' returned {type(result).__name__}, "
@@ -65,12 +67,7 @@ class FunctionRegistry:
                 )
             return converted
 
-        wrapper.__name__ = func.__name__
-        wrapper.__qualname__ = func.__qualname__
-        wrapper.__doc__ = func.__doc__
-        wrapper.__module__ = func.__module__
-        wrapper.__annotations__ = func.__annotations__
-        return wrapper
+        return wrapper  # type: ignore
 
 
 registry = FunctionRegistry()

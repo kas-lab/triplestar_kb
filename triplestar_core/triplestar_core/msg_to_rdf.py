@@ -42,10 +42,18 @@ XSD = 'http://www.w3.org/2001/XMLSchema#'
 
 
 class RosToRdfLiteralConverterRegistry:
+    """Registry that converts Python/ROS types into ``pyoxigraph.Literal``.
+
+    Register converters with :meth:`register`, then call :meth:`convert`.
+    Call :meth:`mapping_table` to see all registered mappings.
+    """
+
     def __init__(self):
         self._converters: Dict[Type, Callable[[Any], RdfLiteral]] = {}
 
     def register(self, *types: Type):
+        """Decorator that registers a converter function for *types*."""
+
         def decorator(func: Callable[[Any], RdfLiteral]):
             for t in types:
                 self._converters[t] = func
@@ -54,6 +62,10 @@ class RosToRdfLiteralConverterRegistry:
         return decorator
 
     def convert(self, value: Any) -> Optional[RdfLiteral]:
+        """Convert *value* to a ``pyoxigraph.Literal``.
+
+        Returns ``None`` when no converter is found.
+        """
         if value is None:
             return None
         value_type = type(value)
@@ -67,34 +79,34 @@ class RosToRdfLiteralConverterRegistry:
         return None
 
 
-registry = RosToRdfLiteralConverterRegistry()
+_registry = RosToRdfLiteralConverterRegistry()
 
 
-@registry.register(Point, Point32, PointStamped)
+@_registry.register(Point, Point32, PointStamped)
 def convert_point(point) -> RdfLiteral:
-    if hasattr(point, 'point'):
+    while hasattr(point, 'point'):
         point = point.point
     shapely_point = ShapelyPoint(point.x, point.y, point.z)
     return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@registry.register(Pose)
+@_registry.register(Pose)
 def convert_pose(pose) -> RdfLiteral:
     shapely_point = ShapelyPoint(pose.position.x, pose.position.y, pose.position.z)
     return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@registry.register(Vector3, Vector3Stamped)
+@_registry.register(Vector3, Vector3Stamped)
 def convert_vector3(vector) -> RdfLiteral:
-    if hasattr(vector, 'vector'):
+    while hasattr(vector, 'vector'):
         vector = vector.vector
     shapely_point = ShapelyPoint(vector.x, vector.y, vector.z)
     return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@registry.register(Polygon, PolygonStamped, PolygonInstance, PolygonInstanceStamped)
+@_registry.register(Polygon, PolygonStamped, PolygonInstance, PolygonInstanceStamped)
 def convert_polygon(polygon) -> RdfLiteral:
-    if hasattr(polygon, 'polygon'):
+    while hasattr(polygon, 'polygon'):
         polygon = polygon.polygon
     coords = [(p.x, p.y) for p in polygon.points] if polygon.points else []
     shp = ShapelyPolygon(coords)
@@ -106,36 +118,44 @@ def convert_shapely_geometry(geom: ShapelyGeometry) -> RdfLiteral:
     """Convert any Shapely geometry to a WKT literal."""
     return RdfLiteral(geom.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
-@registry.register(ROSTime)
+
+@_registry.register(ROSTime)
 def convert_time(ros_time: ROSTime) -> RdfLiteral:
-    dt = datetime.fromtimestamp(ros_time.sec + ros_time.nanosec / 1e9, tz=timezone.utc)
-    return RdfLiteral(
-        dt.isoformat().replace('+00:00', 'Z'),
-        datatype=NamedNode(XSD + 'dateTime'),
-    )
+    dt = datetime.fromtimestamp(
+        ros_time.sec + ros_time.nanosec / 1e9,
+        tz=timezone.utc,
+    ).replace(tzinfo=None)
+    return RdfLiteral(dt.isoformat(), datatype=NamedNode(XSD + 'dateTime'))
 
 
-@registry.register(float)
+@_registry.register(datetime)
+def convert_datetime(dt: datetime) -> RdfLiteral:
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc)
+    return RdfLiteral(dt.replace(tzinfo=None).isoformat(), datatype=NamedNode(XSD + 'dateTime'))
+
+
+@_registry.register(float)
 def convert_float(value: float) -> RdfLiteral:
     return RdfLiteral(str(value), datatype=NamedNode(XSD + 'float'))
 
 
-@registry.register(bool)
+@_registry.register(bool)
 def convert_bool(value: bool) -> RdfLiteral:
     return RdfLiteral(str(value).lower(), datatype=NamedNode(XSD + 'boolean'))
 
 
-@registry.register(int)
+@_registry.register(int)
 def convert_int(value: int) -> RdfLiteral:
     return RdfLiteral(str(value), datatype=NamedNode(XSD + 'integer'))
 
 
-@registry.register(str)
+@_registry.register(str)
 def convert_str(value: str) -> RdfLiteral:
     return RdfLiteral(value, datatype=NamedNode(XSD + 'string'))
 
 
-@registry.register(
+@_registry.register(
     Float32,
     Float64,
     Int8,
@@ -151,5 +171,14 @@ def convert_str(value: str) -> RdfLiteral:
     Bool,
     String,
 )
-def ros_msg_to_literal(msg: Any) -> Optional[RdfLiteral]:
-    return registry.convert(msg)
+def convert_std_msg(msg: Any) -> Optional[RdfLiteral]:
+    """Unwrap a ``std_msgs`` message and convert its inner ``.data`` value."""
+    return _registry.convert(msg.data)
+
+
+def to_rdf_literal(value: Any) -> Optional[RdfLiteral]:
+    """Convert *value* to a ``pyoxigraph.Literal``.
+
+    Returns ``None`` when no converter is found.
+    """
+    return _registry.convert(value)
