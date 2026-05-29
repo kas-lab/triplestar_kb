@@ -41,48 +41,39 @@ GEO = 'http://www.opengis.net/ont/geosparql#'
 XSD = 'http://www.w3.org/2001/XMLSchema#'
 
 
-class RosToRdfLiteralConverterRegistry:
-    """Registry that converts Python/ROS types into ``pyoxigraph.Literal``.
+_converters: Dict[Type, Callable[[Any], RdfLiteral]] = {}
 
-    Register converters with :meth:`register`, then call :meth:`convert`.
-    Call :meth:`mapping_table` to see all registered mappings.
+
+def register_converter(*types: Type):
+    """Decorator that registers a converter function for *types*."""
+
+    def decorator(func: Callable[[Any], RdfLiteral]):
+        for t in types:
+            _converters[t] = func
+        return func
+
+    return decorator
+
+
+def to_rdf_literal(value: Any) -> Optional[RdfLiteral]:
+    """Convert *value* to a ``pyoxigraph.Literal``.
+
+    Returns ``None`` when no converter is found.
     """
-
-    def __init__(self):
-        self._converters: Dict[Type, Callable[[Any], RdfLiteral]] = {}
-
-    def register(self, *types: Type):
-        """Decorator that registers a converter function for *types*."""
-
-        def decorator(func: Callable[[Any], RdfLiteral]):
-            for t in types:
-                self._converters[t] = func
-            return func
-
-        return decorator
-
-    def convert(self, value: Any) -> Optional[RdfLiteral]:
-        """Convert *value* to a ``pyoxigraph.Literal``.
-
-        Returns ``None`` when no converter is found.
-        """
-        if value is None:
-            return None
-        value_type = type(value)
-        # Exact-type lookup first — avoids any subclass ordering dependency.
-        if value_type in self._converters:
-            return self._converters[value_type](value)
-        # Fall back to subclass match for types registered as base classes.
-        for t, func in self._converters.items():
-            if issubclass(value_type, t):
-                return func(value)
+    if value is None:
         return None
+    value_type = type(value)
+    # Exact-type lookup first — avoids any subclass ordering dependency.
+    if value_type in _converters:
+        return _converters[value_type](value)
+    # Fall back to subclass match for types registered as base classes.
+    for t, func in _converters.items():
+        if issubclass(value_type, t):
+            return func(value)
+    return None
 
 
-_registry = RosToRdfLiteralConverterRegistry()
-
-
-@_registry.register(Point, Point32, PointStamped)
+@register_converter(Point, Point32, PointStamped)
 def convert_point(point) -> RdfLiteral:
     while hasattr(point, 'point'):
         point = point.point
@@ -90,13 +81,13 @@ def convert_point(point) -> RdfLiteral:
     return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@_registry.register(Pose)
+@register_converter(Pose)
 def convert_pose(pose) -> RdfLiteral:
     shapely_point = ShapelyPoint(pose.position.x, pose.position.y, pose.position.z)
     return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@_registry.register(Vector3, Vector3Stamped)
+@register_converter(Vector3, Vector3Stamped)
 def convert_vector3(vector) -> RdfLiteral:
     while hasattr(vector, 'vector'):
         vector = vector.vector
@@ -104,7 +95,7 @@ def convert_vector3(vector) -> RdfLiteral:
     return RdfLiteral(shapely_point.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@_registry.register(Polygon, PolygonStamped, PolygonInstance, PolygonInstanceStamped)
+@register_converter(Polygon, PolygonStamped, PolygonInstance, PolygonInstanceStamped)
 def convert_polygon(polygon) -> RdfLiteral:
     while hasattr(polygon, 'polygon'):
         polygon = polygon.polygon
@@ -113,13 +104,13 @@ def convert_polygon(polygon) -> RdfLiteral:
     return RdfLiteral(shp.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@_registry.register(ShapelyGeometry)
+@register_converter(ShapelyGeometry)
 def convert_shapely_geometry(geom: ShapelyGeometry) -> RdfLiteral:
     """Convert any Shapely geometry to a WKT literal."""
     return RdfLiteral(geom.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 
-@_registry.register(ROSTime)
+@register_converter(ROSTime)
 def convert_time(ros_time: ROSTime) -> RdfLiteral:
     dt = datetime.fromtimestamp(
         ros_time.sec + ros_time.nanosec / 1e9,
@@ -128,34 +119,34 @@ def convert_time(ros_time: ROSTime) -> RdfLiteral:
     return RdfLiteral(dt.isoformat(), datatype=NamedNode(XSD + 'dateTime'))
 
 
-@_registry.register(datetime)
+@register_converter(datetime)
 def convert_datetime(dt: datetime) -> RdfLiteral:
     if dt.tzinfo is not None:
         dt = dt.astimezone(timezone.utc)
     return RdfLiteral(dt.replace(tzinfo=None).isoformat(), datatype=NamedNode(XSD + 'dateTime'))
 
 
-@_registry.register(float)
+@register_converter(float)
 def convert_float(value: float) -> RdfLiteral:
     return RdfLiteral(str(value), datatype=NamedNode(XSD + 'float'))
 
 
-@_registry.register(bool)
+@register_converter(bool)
 def convert_bool(value: bool) -> RdfLiteral:
     return RdfLiteral(str(value).lower(), datatype=NamedNode(XSD + 'boolean'))
 
 
-@_registry.register(int)
+@register_converter(int)
 def convert_int(value: int) -> RdfLiteral:
     return RdfLiteral(str(value), datatype=NamedNode(XSD + 'integer'))
 
 
-@_registry.register(str)
+@register_converter(str)
 def convert_str(value: str) -> RdfLiteral:
     return RdfLiteral(value, datatype=NamedNode(XSD + 'string'))
 
 
-@_registry.register(
+@register_converter(
     Float32,
     Float64,
     Int8,
@@ -173,12 +164,4 @@ def convert_str(value: str) -> RdfLiteral:
 )
 def convert_std_msg(msg: Any) -> Optional[RdfLiteral]:
     """Unwrap a ``std_msgs`` message and convert its inner ``.data`` value."""
-    return _registry.convert(msg.data)
-
-
-def to_rdf_literal(value: Any) -> Optional[RdfLiteral]:
-    """Convert *value* to a ``pyoxigraph.Literal``.
-
-    Returns ``None`` when no converter is found.
-    """
-    return _registry.convert(value)
+    return to_rdf_literal(msg.data)
