@@ -21,6 +21,7 @@ from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import NamedNode
 from shapely import Point as ShapelyPoint
 from shapely import Polygon as ShapelyPolygon
+from shapely.geometry.base import BaseGeometry as ShapelyGeometry
 from std_msgs.msg import Bool
 from std_msgs.msg import Byte
 from std_msgs.msg import Char
@@ -99,6 +100,11 @@ def convert_polygon(polygon) -> RdfLiteral:
     shp = ShapelyPolygon(coords)
     return RdfLiteral(shp.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
+
+@_registry.register(ShapelyGeometry)
+def convert_shapely_geometry(geom: ShapelyGeometry) -> RdfLiteral:
+    """Convert any Shapely geometry to a WKT literal."""
+    return RdfLiteral(geom.wkt, datatype=NamedNode(GEO + 'wktLiteral'))
 
 @registry.register(ROSTime)
 def convert_time(ros_time: ROSTime) -> RdfLiteral:
