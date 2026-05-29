@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -52,54 +53,59 @@ class TriplestarKBNode(LifecycleNode):
 
         self.get_logger().info(f'Using config package: {bringup_package} ({share_dir})')
 
-        # --- CONFIG LOAD ---
         try:
+            # --- CONFIG LOAD ---
             self.config = self._load_kb_config(share_dir / 'config' / 'kb_params.yaml')
-        except Exception as e:
-            self.get_logger().error(f'Failed to load KB config: {e}')
+
+            # --- KB INIT ---
+            self.kb = TriplestarKnowledgeBase(
+                store_path=self.config.store_path,
+                logger=self.get_logger(),
+                base_iri=self.config.base_iri,
+            )
+
+            self.get_logger().info(f'Using store path: {self.kb.store_path}')
+
+            # --- CLEAR ON STARTUP ---
+            if self.config.clear_on_startup:
+                self.kb.clear()
+                self.get_logger().info('Cleared store on startup')
+
+            # --- PRELOAD ---
+            if not self._preload_files(share_dir / 'preload'):
+                return TransitionCallbackReturn.ERROR
+
+            # --- SUBSCRIBERS ---
+            subscriber_config = self._load_subscribers_config(
+                share_dir / 'config' / 'subscribers.yaml'
+            )
+            self.subscriber_manager = SubscriptionManager(
+                self,
+                config=subscriber_config,
+                kb=self.kb,
+                templates_dir=share_dir / 'templates',
+            )
+
+            # --- QUERY SERVICES ---
+            query_config = self._load_query_service_config(
+                share_dir / 'config' / 'query_services.yaml'
+            )
+            self.query_service_manager = QueryServiceManager(
+                self,
+                config=query_config,
+                kb=self.kb,
+                queries_dir=share_dir / 'queries',
+            )
+
+            # --- KB FUNCTIONS ---
+            self._load_kb_functions(share_dir / 'functions')
+
+            for name, func in registry:
+                self.kb.add_kb_function(name, func)
+
+        except Exception:
+            self.get_logger().error(f'Configuration failed:\n{traceback.format_exc()}')
             return TransitionCallbackReturn.ERROR
-
-        # --- KB INIT ---
-        self.kb = TriplestarKnowledgeBase(
-            store_path=self.config.store_path,
-            logger=self.get_logger(),
-            base_iri=self.config.base_iri,
-        )
-
-        self.get_logger().info(f'Using store path: {self.kb.store_path}')
-
-        # --- CLEAR ON STARTUP ---
-        if self.config.clear_on_startup:
-            self.kb.clear()
-            self.get_logger().info('Cleared store on startup')
-
-        # --- PRELOAD ---
-        if not self._preload_files(share_dir / 'preload'):
-            return TransitionCallbackReturn.ERROR
-
-        # --- SUBSCRIBERS ---
-        subscriber_config = self._load_subscribers_config(share_dir / 'config' / 'subscribers.yaml')
-        self.subscriber_manager = SubscriptionManager(
-            self,
-            config=subscriber_config,
-            kb=self.kb,
-            templates_dir=share_dir / 'templates',
-        )
-
-        # --- QUERY SERVICES ---
-        query_config = self._load_query_service_config(share_dir / 'config' / 'query_services.yaml')
-        self.query_service_manager = QueryServiceManager(
-            self,
-            config=query_config,
-            kb=self.kb,
-            queries_dir=share_dir / 'queries',
-        )
-
-        # --- KB FUNCTIONS ---
-        self._load_kb_functions(share_dir / 'functions')
-
-        for name, func in registry:
-            self.kb.add_kb_function(name, func)
 
         self.get_logger().info('KB node configured successfully')
         return TransitionCallbackReturn.SUCCESS
