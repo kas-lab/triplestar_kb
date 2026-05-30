@@ -1,6 +1,5 @@
 import functools
 from types import FunctionType
-from typing import Optional
 
 from pyoxigraph import Literal as _RdfLiteral
 from pyoxigraph import NamedNode as _NamedNode
@@ -20,7 +19,7 @@ class FunctionRegistry:
     def __init__(self) -> None:
         self._functions: dict[str, _RegisteredFunc] = {}
 
-    def register(self, func: _RegisteredFunc, name: Optional[str] = None) -> _RegisteredFunc:
+    def register(self, func: _RegisteredFunc, name: str | None = None) -> _RegisteredFunc:
         func_name = name or func.__name__
         if func_name in self._functions:
             raise ValueError(f"Function '{func_name}' is already registered")
@@ -28,10 +27,7 @@ class FunctionRegistry:
         self._functions[func_name] = wrapped
         return func
 
-    def kb_function(self, name: Optional[str] = None):
-        return lambda func: self.register(func, name=name)
-
-    def get(self, name: str, default=None) -> Optional[_RegisteredFunc]:
+    def get(self, name: str, default: _RegisteredFunc | None = None) -> _RegisteredFunc | None:
         return self._functions.get(name, default)
 
     def __getitem__(self, name: str) -> _RegisteredFunc:
@@ -73,5 +69,5 @@ class FunctionRegistry:
 registry = FunctionRegistry()
 
 
-def kb_function(name: Optional[str] = None):
-    return registry.kb_function(name)
+def kb_function(name: str | None = None):
+    return lambda func: registry.register(func, name=name)

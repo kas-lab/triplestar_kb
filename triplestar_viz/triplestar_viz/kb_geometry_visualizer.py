@@ -1,7 +1,7 @@
 import json
 
-import rclpy
 from geometry_msgs.msg import Point
+import rclpy
 from rclpy.node import Node
 from shapely import wkt
 from triplestar_msgs.srv import SPARQLQuery

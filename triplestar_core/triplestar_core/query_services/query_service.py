@@ -1,11 +1,13 @@
+from collections.abc import Callable
 import json
-import re
 from pathlib import Path
-from typing import Callable, Literal
+import re
+from typing import Literal
 
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
-from triplestar_msgs.srv import AskQuery, SelectQuery
+from triplestar_msgs.srv import AskQuery
+from triplestar_msgs.srv import SelectQuery
 
 """
 The query service sets up a ROS service backed by a .sparql file.

@@ -1,13 +1,12 @@
 import time
 from typing import Any
-from typing import Optional
 
-import rclpy
-import tf2_ros
 from geometry_msgs.msg import TransformStamped
+import rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 from rclpy.time import Time
+import tf2_ros
 
 
 class BaseLatestSubscriber:
@@ -16,7 +15,7 @@ class BaseLatestSubscriber:
         self._max_age_sec = max_age_sec
         self._logger = node.get_logger().get_child(self.__class__.__name__)
 
-    def get_latest(self, *args, **kwargs) -> Optional[Any]:
+    def get_latest(self, *args, **kwargs) -> Any | None:
         raise NotImplementedError('get_latest must be implemented by subclasses')
 
 
@@ -28,7 +27,7 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
         msg_type,
         callback_group,
         max_age_sec: float = 2.0,
-        msg_field_name: Optional[str] = None,
+        msg_field_name: str | None = None,
     ):
         super().__init__(node, max_age_sec)
         self._topic = topic
@@ -86,7 +85,7 @@ class TransformLatestSubscriber(BaseLatestSubscriber):
         self._buffer = buffer
         self._listener = listener
 
-    def get_latest(self) -> Optional[TransformStamped]:
+    def get_latest(self) -> TransformStamped | None:
         try:
             transform = self._buffer.lookup_transform(
                 self._to_frame,

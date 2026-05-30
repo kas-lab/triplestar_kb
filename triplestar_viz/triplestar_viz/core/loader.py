@@ -5,10 +5,14 @@ This module provides functions to load RDF data from various sources
 (files, stores) and execute SPARQL queries.
 """
 
+from collections.abc import Callable
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Callable, Dict, Iterator, Optional, Union
 
-from pyoxigraph import NamedNode, Quad, Store, Triple
+from pyoxigraph import NamedNode
+from pyoxigraph import Quad
+from pyoxigraph import Store
+from pyoxigraph import Triple
 
 
 class RDFLoader:
@@ -16,7 +20,7 @@ class RDFLoader:
 
     @staticmethod
     def from_file(
-        path: Union[str, Path],
+        path: str | Path,
         format: str = 'turtle',
     ) -> Store:
         """
@@ -67,7 +71,7 @@ class RDFLoader:
         return store
 
     @staticmethod
-    def from_store(store_path: Union[str, Path], read_only: bool = True) -> Store:
+    def from_store(store_path: str | Path, read_only: bool = True) -> Store:
         """
         Open an existing pyoxigraph store.
 
@@ -94,8 +98,8 @@ class RDFLoader:
     def execute_query(
         store: Store,
         query: str,
-        custom_functions: Optional[Dict[NamedNode, Callable]] = None,
-    ) -> Iterator[Union[Quad, Triple]]:
+        custom_functions: dict[NamedNode, Callable] | None = None,
+    ) -> Iterator[Quad | Triple]:
         """
         Execute a SPARQL CONSTRUCT query on a store.
 
@@ -119,7 +123,7 @@ class RDFLoader:
             return store.query(query)
 
     @staticmethod
-    def load_query_from_file(path: Union[str, Path]) -> str:
+    def load_query_from_file(path: str | Path) -> str:
         """
         Load a SPARQL query from a file.
 
@@ -136,7 +140,7 @@ class RDFLoader:
         if not path.exists():
             raise FileNotFoundError(f'Query file not found: {path}')
 
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             return f.read()
 
     @staticmethod

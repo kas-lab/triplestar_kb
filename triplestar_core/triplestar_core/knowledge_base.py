@@ -1,9 +1,7 @@
+from collections.abc import Callable
 from inspect import signature
 from pathlib import Path
-from typing import Callable
-from typing import List
 
-import reasonable
 from oxrdflib._converter import from_ox
 from oxrdflib._converter import to_ox
 from pyoxigraph import DefaultGraph
@@ -12,6 +10,7 @@ from pyoxigraph import Quad
 from pyoxigraph import QueryResultsFormat
 from pyoxigraph import RdfFormat
 from pyoxigraph import Store
+import reasonable
 
 
 class TriplestarKnowledgeBase:
@@ -81,14 +80,14 @@ class TriplestarKnowledgeBase:
         self.store.clear_graph(self.reasoned_graph)
         self.store.bulk_extend(inferred_quads)
 
-    def load_files(self, file_paths: List[Path], format: RdfFormat = RdfFormat.TURTLE) -> int:
+    def load_files(self, file_paths: list[Path], file_format: RdfFormat = RdfFormat.TURTLE) -> int:
         loaded = 0
         for f in file_paths:
             try:
                 with f.open('r', encoding='utf-8') as fh:
                     self.store.load(
                         input=fh,
-                        format=format,
+                        format=file_format,
                         base_iri=self.base_iri,
                     )
                 loaded += 1

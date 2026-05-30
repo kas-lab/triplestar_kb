@@ -6,9 +6,8 @@ This tool provides a standalone CLI for visualizing RDF graphs without needing R
 """
 
 import argparse
-import sys
 from pathlib import Path
-from typing import Optional
+import sys
 
 from triplestar_viz.core import RDFLoader
 from triplestar_viz.core import RDFStarVisualizer
@@ -166,7 +165,7 @@ Examples:
             print(f'  Loaded {quad_count} quads')
 
         # Load query if provided
-        query: Optional[str] = None
+        query: str | None = None
         if args.query:
             if args.verbose:
                 print(f'Loading query from: {args.query}')

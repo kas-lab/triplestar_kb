@@ -1,15 +1,14 @@
 import importlib.util
+from pathlib import Path
 import sys
 import traceback
-from pathlib import Path
-from typing import Optional
 
-import yaml
 from ament_index_python import get_package_share_directory
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import LifecycleState
 from rclpy.lifecycle import TransitionCallbackReturn
 from triplestar_msgs.srv import SPARQLQuery
+import yaml
 
 from triplestar_core.config import KBConfig
 from triplestar_core.config import QueryServicesConfig
@@ -21,16 +20,14 @@ from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
 
 
 class TriplestarKBNode(LifecycleNode):
-    """
-    A ROS2 lifecycle node for managing a triplestar knowledge base using pyoxigraph.
-    """
+    """A ROS2 lifecycle node for managing a triplestar knowledge base using pyoxigraph."""
 
     def __init__(self):
         super().__init__('triplestar_core')
 
-        self.kb: Optional[TriplestarKnowledgeBase] = None
-        self.subscriber_manager: Optional[SubscriptionManager] = None
-        self.query_service_manager: Optional[QueryServiceManager] = None
+        self.kb: TriplestarKnowledgeBase | None = None
+        self.subscriber_manager: SubscriptionManager | None = None
+        self.query_service_manager: QueryServiceManager | None = None
 
         self.declare_parameter('bringup_package', 'triplestar_bringup')
 
@@ -157,7 +154,7 @@ class TriplestarKBNode(LifecycleNode):
         return result
 
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
-        """Final shutdown and cleanup."""
+        """Shut down and clean up the node."""
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
 

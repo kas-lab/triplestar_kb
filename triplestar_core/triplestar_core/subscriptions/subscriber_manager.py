@@ -1,19 +1,17 @@
-import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
-from typing import Optional
-from typing import Type
+import time
 
-import rclpy
-import tf2_ros
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import StrictUndefined
 from jinja2 import TemplateNotFound
+import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 from ros2topic.api import get_msg_class
+import tf2_ros
 
 from triplestar_core.config import InsertionSubscriberConfig
 from triplestar_core.config import QueryTimeTFSubscriberConfig
@@ -31,8 +29,8 @@ def _rdf_filter(value) -> str:
     return str(literal) if literal is not None else repr(value)
 
 
-# Returns a function that queries the latest message from the subscriber and converts it to an RDF literal, which can be registered in the KB.
 def make_query_fn(sub):
+    """Create a query function for the given subscriber."""
     return lambda: to_rdf_literal(sub.get_latest_msg())
 
 
@@ -85,7 +83,7 @@ class SubscriptionManager:
             f'insertion: {list(self.insertion_subs.keys())}'
         )
 
-    def try_msg_class(self, topic: str, timeout_sec: float = 2.0) -> Optional[Type]:
+    def try_msg_class(self, topic: str, timeout_sec: float = 2.0) -> type | None:
         start = time.time()
         self.logger.info(f"Waiting for message class for topic '{topic}'...")
 
