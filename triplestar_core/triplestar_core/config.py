@@ -1,6 +1,4 @@
 from pathlib import Path
-from typing import Dict
-from typing import List
 
 from pydantic import BaseModel
 from pydantic import Field
@@ -8,7 +6,7 @@ from pydantic import Field
 
 class KBConfig(BaseModel):
     store_path: Path
-    preload_files: List[str] = Field(default_factory=list)
+    preload_files: list[str] = Field(default_factory=list)
     base_iri: str
     clear_on_startup: bool = True
 
@@ -29,11 +27,11 @@ class QueryTimeTFSubscriberConfig(BaseModel):
 
 
 class SubscribersConfig(BaseModel):
-    insertion_subscribers: Dict[str, InsertionSubscriberConfig] = Field(default_factory=dict)
-    query_time_topic_subscribers: Dict[str, QueryTimeTopicSubscriberConfig] = Field(
+    insertion_subscribers: dict[str, InsertionSubscriberConfig] = Field(default_factory=dict)
+    query_time_topic_subscribers: dict[str, QueryTimeTopicSubscriberConfig] = Field(
         default_factory=dict
     )
-    query_time_tf_subscribers: Dict[str, QueryTimeTFSubscriberConfig] = Field(default_factory=dict)
+    query_time_tf_subscribers: dict[str, QueryTimeTFSubscriberConfig] = Field(default_factory=dict)
 
 
 class QueryServiceConfig(BaseModel):
@@ -42,4 +40,4 @@ class QueryServiceConfig(BaseModel):
 
 
 class QueryServicesConfig(BaseModel):
-    query_services: Dict[str, QueryServiceConfig] = Field(default_factory=dict)
+    query_services: dict[str, QueryServiceConfig] = Field(default_factory=dict)
