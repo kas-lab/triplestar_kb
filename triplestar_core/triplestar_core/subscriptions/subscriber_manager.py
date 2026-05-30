@@ -17,8 +17,8 @@ from triplestar_core.config import InsertionSubscriberConfig
 from triplestar_core.config import QueryTimeTFSubscriberConfig
 from triplestar_core.config import QueryTimeTopicSubscriberConfig
 from triplestar_core.config import SubscribersConfig
+from triplestar_core.conversions import to_rdf_literal
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
-from triplestar_core.msg_to_rdf import to_rdf_literal
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TopicLatestSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TransformLatestSubscriber
