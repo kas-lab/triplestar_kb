@@ -19,10 +19,16 @@
   <depend>std_srvs</depend>
 
   <!-- Python dependencies -->
+  <depend>python3-copier-pip</depend>
   <depend>python3-jinja2</depend>
+  <depend>python3-oxrdflib-pip</depend>
   <depend>python3-pydantic</depend>
-  <depend>python3-yaml</depend>
+  <depend>python3-pyoxigraph-pip</depend>
+  <depend>python3-rdflib</depend>
+  <depend>python3-reasonable-pip</depend>
   <depend>python3-shapely</depend>
+  <depend>python3-yaml</depend>
+
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

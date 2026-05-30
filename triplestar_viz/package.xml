@@ -16,6 +16,7 @@
   <!-- Python dependencies -->
   <depend>python3-graphviz</depend>
   <depend>python3-pil</depend>
+  <depend>python3-pyoxigraph</depend>
   <depend>python3-shapely</depend>
 
   <test_depend>ament_copyright</test_depend>
