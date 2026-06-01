@@ -46,7 +46,7 @@ class FileQueryService:
         self._query_fn = query_fn
 
         query_type = _detect_query_type(query_file)
-        srv_name = f'{node.get_name()}/query_services/{name}'
+        srv_name = f'/triplestar/query/{name}'
 
         srv_map = {
             'select': (SelectQuery, self._handle_select),

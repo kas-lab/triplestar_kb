@@ -126,8 +126,9 @@ class TriplestarKBNode(LifecycleNode):
         self.get_logger().info('Activating KB node...')
 
         self.query_service = self.create_service(
-            SPARQLQuery, f'{self.get_name()}/query', self.query_callback
+            SPARQLQuery, '/triplestar/sparql', self.query_callback
         )
+        self.get_logger().info('SPARQL query service ready at /triplestar/sparql')
 
         result = super().on_activate(state)
 
@@ -142,6 +143,7 @@ class TriplestarKBNode(LifecycleNode):
         """Deactivate the KB node but keep data in memory."""
         self.get_logger().info('Deactivating KB node...')
 
+        self.get_logger().info('Removing SPARQL query service')
         self.query_service = None
 
         result = super().on_deactivate(state)

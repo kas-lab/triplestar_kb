@@ -19,9 +19,9 @@ class KBGeometryVisualizer(Node):
         self.get_logger().info('KB Geometry Visualizer node started')
 
     def request_geometries_from_kb(self, sparql: str):
-        client = self.create_client(SPARQLQuery, '/triplestar_core/query')
+        client = self.create_client(SPARQLQuery, '/triplestar/sparql')
         if not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn('Waiting for /triplestar_core/query service...')
+            self.get_logger().warn('Waiting for /triplestar/sparql service...')
             return
 
         request = SPARQLQuery.Request()
