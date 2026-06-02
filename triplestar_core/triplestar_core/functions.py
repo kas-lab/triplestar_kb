@@ -2,27 +2,13 @@ from collections.abc import Callable
 from collections.abc import Iterator
 import functools
 from types import FunctionType
-from typing import Any
 
-from oxrdflib._converter import from_ox
 import pyoxigraph as ox
-import rdflib
 
 from triplestar_core.conversions import from_rdf_literal
 from triplestar_core.conversions import to_rdf_literal
 
 _RegisteredFunc = FunctionType
-
-
-def _convert_oxi_literal(arg: ox.Literal) -> Any:
-    if not isinstance(arg, ox.Literal):
-        raise TypeError(f'Expected pyoxigraph.Literal, got {type(arg).__name__} ({arg!r})')
-    rdflib_literal = from_ox(arg)
-    if not isinstance(rdflib_literal, rdflib.Literal):
-        raise TypeError(
-            f'Expected rdflib.Literal after conversion, got {type(rdflib_literal).__name__}'
-        )
-    return rdflib_literal.value
 
 
 class FunctionRegistry:
