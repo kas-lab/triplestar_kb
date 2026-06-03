@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from inspect import signature
+import logging
 from pathlib import Path
 
 from oxrdflib._converter import from_ox
@@ -16,13 +17,12 @@ import reasonable
 class TriplestarKnowledgeBase:
     def __init__(
         self,
-        store_path: Path,
-        base_iri: str,
-        logger,
+        store_path: Path | None,
+        base_iri: str = 'http://example.org/',
+        logger=None,
     ):
-        if logger is None:
-            raise ValueError('logger must be provided')
-        self.logger = logger.get_child('KBInterface')
+
+        self.logger = logger.get_child('KBInterface') if logger else logging.getLogger(__name__)
 
         self.store_path = store_path
         self.store: Store = Store(store_path)
