@@ -5,13 +5,20 @@ from pathlib import Path
 
 from oxrdflib._converter import from_ox
 from oxrdflib._converter import to_ox
+from pyoxigraph import BlankNode
 from pyoxigraph import DefaultGraph
+from pyoxigraph import Literal
 from pyoxigraph import NamedNode
 from pyoxigraph import Quad
+from pyoxigraph import QueryBoolean
 from pyoxigraph import QueryResultsFormat
+from pyoxigraph import QuerySolutions
 from pyoxigraph import RdfFormat
 from pyoxigraph import Store
+from pyoxigraph import Variable
 import reasonable
+
+from triplestar_core.conversions import string_to_oxi_term
 
 
 class TriplestarKnowledgeBase:
@@ -108,11 +115,31 @@ class TriplestarKnowledgeBase:
         except Exception as e:
             self.logger.error(f'Update failed: {e}')
 
-    def query_json(self, query: str, reasoning: bool = False) -> str:
+    @staticmethod
+    def make_substitutions(
+        bindings: dict[str, str],
+    ) -> dict[Variable, NamedNode | Literal | BlankNode]:
+        return {Variable(k): string_to_oxi_term(v) for k, v in bindings.items()}
+
+    def query(
+        self,
+        query: str,
+        reasoning: bool = False,
+        substitutions: dict[str, str] | None = None,
+    ) -> str | bool | None:
+        """
+        Execute a SPARQL query and return the results.
+
+        For SELECT queries, returns a JSON string of the results.
+        For ASK queries, returns a boolean.
+        """
         self.logger.debug(f'Executing query: {query}')
+
+        oxi_substitutions = self.make_substitutions(substitutions) if substitutions else None
 
         if reasoning:
             self.run_reasoning()
+
         try:
             result = self.store.query(
                 query,
@@ -120,11 +147,17 @@ class TriplestarKnowledgeBase:
                 prefixes=self.extra_iris,
                 custom_functions=self.fn_registry,
                 use_default_graph_as_union=reasoning,
+                substitutions=oxi_substitutions,  # type: ignore
             )
-            return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # type: ignore
+            if isinstance(result, QueryBoolean):
+                return bool(result)
+            elif isinstance(result, QuerySolutions):
+                return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # type: ignore
+            raise ValueError('CONSTRUCT and DESCRIBE queries are not supported in TriplestarKB')
+
         except Exception as e:
             self.logger.error(f'Query execution failed: {e}')
-            return ''
+            return None
 
     def count_triples(self) -> int:
         return len(list(self.store.quads_for_pattern(None, None, None, None)))

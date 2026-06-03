@@ -1,5 +1,4 @@
 from collections.abc import Callable
-import json
 from pathlib import Path
 import re
 from typing import Literal
@@ -9,23 +8,20 @@ from rclpy.node import Node
 from triplestar_msgs.srv import AskQuery
 from triplestar_msgs.srv import SelectQuery
 
-"""
-The query service sets up a ROS service backed by a .sparql file.
-On each call it reads the file and delegates execution to query_fn.
-"""
-
 QueryType = Literal['select', 'ask']
+
+_SERVICE_TYPES: dict[QueryType, type] = {
+    'select': SelectQuery,
+    'ask': AskQuery,
+}
 
 
 def _detect_query_type(query_file: Path) -> QueryType:
-    """Detect the SPARQL query type by inspecting the file contents."""
     sparql = query_file.read_text()
-    stripped = re.sub(r'#[^\n]*', '', sparql)  # strip line comments
+    stripped = re.sub(r'#[^\n]*', '', sparql)
     match = re.search(r'\b(SELECT|ASK)\b', stripped, re.IGNORECASE)
     if match is None:
-        raise ValueError(
-            f'Could not detect query type in "{query_file}" — expected a SELECT or ASK query'
-        )
+        raise ValueError(f'Could not detect query type in "{query_file}" — expected SELECT or ASK')
     return match.group(1).lower()  # type: ignore
 
 
@@ -35,54 +31,49 @@ class FileQueryService:
         node: Node | LifecycleNode,
         name: str,
         query_file: Path,
-        query_fn: Callable[[str], str],
+        query_fn: Callable[[str, dict[str, str]], str | bool | None],
     ):
         self.logger = node.get_logger().get_child(name)
-
         if not query_file.exists():
             raise FileNotFoundError(f'Query file not found: {query_file}')
-
         self._query_file = query_file
         self._query_fn = query_fn
 
         query_type = _detect_query_type(query_file)
         srv_name = f'/triplestar/query/{name}'
 
-        srv_map = {
-            'select': (SelectQuery, self._handle_select),
-            'ask': (AskQuery, self._handle_ask),
-        }
-
-        if query_type not in srv_map:
-            raise ValueError(f'Unknown query type "{query_type}"')
-
-        srv_type, callback = srv_map[query_type]
-        node.create_service(
-            srv_type,
-            srv_name,
-            callback,
-        )
+        match query_type:
+            case 'select':
+                node.create_service(SelectQuery, srv_name, self._handle_select)
+            case 'ask':
+                node.create_service(AskQuery, srv_name, self._handle_ask)
 
         self.logger.info(f'Query service "{srv_name}" ready ({query_type})')
 
-    def _handle_select(self, request, response):
-        return self._handle(response, lambda r: r)
+    def _run_query(self, request: SelectQuery.Request | AskQuery.Request) -> str | bool | None:
+        substitutions: dict[str, str] = {b.variable: b.rdf_term for b in request.substitutions}
+        return self._query_fn(self._query_file.read_text(), substitutions)
 
-    def _handle_ask(self, request, response):
-        return self._handle(response, lambda r: json.loads(r).get('boolean', False))
-
-    def _handle(self, response, transform_fn):
-        query = self._query_file.read_text()
-
+    def _handle_select(self, request: SelectQuery.Request, response: SelectQuery.Response):
         try:
-            raw = self._query_fn(query)
-            if not raw:
-                response.success = False
-                response.error_message = 'Query returned an empty result'
-                return response
-
+            result = self._run_query(request)
+            if not isinstance(result, str):
+                raise TypeError(f'Expected str result for SELECT query, got {type(result)}')
             response.success = True
-            response.result = transform_fn(raw)
+            response.result = result
+        except Exception as e:
+            self.logger.error(f'Query failed: {e}')
+            response.success = False
+            response.error_message = str(e)
+        return response
+
+    def _handle_ask(self, request: AskQuery.Request, response: AskQuery.Response):
+        try:
+            result = self._run_query(request)
+            if not isinstance(result, bool):
+                raise TypeError(f'Expected bool result for ASK query, got {type(result)}')
+            response.success = True
+            response.result = result
         except Exception as e:
             self.logger.error(f'Query failed: {e}')
             response.success = False

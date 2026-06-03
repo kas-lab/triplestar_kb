@@ -208,7 +208,7 @@ class TriplestarKBNode(LifecycleNode):
             response.result = ''
             return response
 
-        response.result = self.kb.query_json(request.query)
+        response.result = self.kb.query(request.query)
         response.success = response.result != ''
 
         return response
