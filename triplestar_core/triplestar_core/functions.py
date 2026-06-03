@@ -5,7 +5,7 @@ from types import FunctionType
 
 import pyoxigraph as ox
 
-from triplestar_core.conversions import from_rdf_literal
+from triplestar_core.conversions import rdf_literal_to_python
 from triplestar_core.conversions import to_rdf_literal
 
 _RegisteredFunc = FunctionType
@@ -53,8 +53,8 @@ class FunctionRegistry:
     def _wrap(func: _RegisteredFunc) -> _RegisteredFunc:
         @functools.wraps(func)
         def wrapper(*args: ox.Literal, **kwargs: ox.Literal) -> ox.Literal | ox.NamedNode | None:
-            mapped_args = tuple(from_rdf_literal(a) for a in args)
-            mapped_kwargs = {k: from_rdf_literal(v) for k, v in kwargs.items()}
+            mapped_args = tuple(rdf_literal_to_python(a) for a in args)
+            mapped_kwargs = {k: rdf_literal_to_python(v) for k, v in kwargs.items()}
 
             result = func(*mapped_args, **mapped_kwargs)
 
