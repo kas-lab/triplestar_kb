@@ -18,8 +18,9 @@ from oxrdflib._converter import to_ox
 import pyoxigraph as ox
 import rdflib
 from rdflib import Literal
-from rdflib import term
 from rdflib.namespace import GEO
+from rdflib.term import Node as RdflibNode
+from rdflib.util import from_n3
 from shapely import Point as ShapelyPoint
 from shapely import Polygon as ShapelyPolygon
 from shapely import wkt as _shapely_wkt
@@ -76,7 +77,7 @@ _ROS_TO_PYTHON = {
 }
 
 # bind shapely objects to wkt literals
-term.bind(
+rdflib.term.bind(
     GEO.wktLiteral,
     ShapelyGeometry,
     constructor=lambda s: _shapely_wkt.loads(s),
@@ -85,7 +86,7 @@ term.bind(
 
 
 def to_rdf_literal(msg) -> ox.Literal | None:
-    """Convert a value to a pyoxigraph RDF literal.
+    """Convert a ROS message or python value to a pyoxigraph RDF literal.
 
     * ROS messages are unwrapped via ``_ROS_TO_PYTHON``
     * Everything else is passed to ``rdflib.Literal()`` which uses
@@ -115,7 +116,7 @@ def to_rdf_literal(msg) -> ox.Literal | None:
     return result
 
 
-def from_rdf_literal(literal: ox.Literal) -> Any:
+def rdf_literal_to_python(literal: ox.Literal) -> Any:
     """Convert a pyoxigraph RDF literal to a Python value."""
     rdflib_literal = from_ox(literal)
     if not isinstance(rdflib_literal, rdflib.Literal):
@@ -123,3 +124,16 @@ def from_rdf_literal(literal: ox.Literal) -> Any:
             f'Expected rdflib.Literal after conversion, got {type(rdflib_literal).__name__}'
         )
     return rdflib_literal.value
+
+
+def string_to_oxi_term(string: str) -> ox.NamedNode | ox.Literal | ox.BlankNode:
+    if not string.startswith('<') and not string.startswith('"'):
+        raise ValueError(f'Invalid RDF term (must be <uri> or "literal"...): {string}')
+
+    term = from_n3(string)
+    if not isinstance(term, RdflibNode):
+        raise ValueError(f'Cannot parse {string} to an rdf term')
+    ox_term = to_ox(term)
+    if not isinstance(ox_term, (ox.NamedNode, ox.Literal)):
+        raise ValueError(f'Cannot convert {string} to a IRI or Literal')
+    return ox_term

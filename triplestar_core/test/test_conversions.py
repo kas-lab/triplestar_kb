@@ -6,6 +6,7 @@ from geometry_msgs.msg import PolygonInstanceStamped
 from geometry_msgs.msg import PolygonStamped
 from oxrdflib._converter import from_ox
 import pyoxigraph as ox
+import pytest
 import rdflib
 from shapely import Point as ShapelyPoint
 from shapely import wkt as shapely_wkt
@@ -13,6 +14,7 @@ from std_msgs.msg import Bool
 from std_msgs.msg import Float32
 from std_msgs.msg import Int32
 from std_msgs.msg import String
+from triplestar_core.conversions import string_to_oxi_term
 from triplestar_core.conversions import to_rdf_literal
 
 GEO = 'http://www.opengis.net/ont/geosparql#'
@@ -226,3 +228,74 @@ def test_reverse_int_roundtrip():
     rdf = from_ox(pyox)
     assert isinstance(rdf, rdflib.Literal)
     assert rdf.value == 42
+
+
+# ── strings → Pyoxigraph (for the quuery variable substitutions) ─────────────────────
+
+# --- URIs ---
+
+
+def test_absolute_iri():
+    assert isinstance(string_to_oxi_term('<http://example.org/x>'), ox.NamedNode)
+
+
+def test_absolute_iri_value():
+    term = string_to_oxi_term('<http://example.org/x>')
+    assert str(term.value) == 'http://example.org/x'
+
+
+def test_relative_iri_rejected():
+    with pytest.raises(ValueError):
+        string_to_oxi_term('<foo/bar>')
+
+
+def test_bare_iri_rejected():
+    with pytest.raises(ValueError):
+        string_to_oxi_term('http://example.org/x')
+
+
+def test_prefixed_name_rejected():
+    with pytest.raises(ValueError):
+        string_to_oxi_term('xsd:integer')
+
+
+# -- Literals ---
+
+
+def test_plain_literal():
+    assert isinstance(string_to_oxi_term('"hello"'), ox.Literal)
+
+
+def test_typed_literal():
+    term = string_to_oxi_term('"42"^^<http://www.w3.org/2001/XMLSchema#integer>')
+    assert isinstance(term, ox.Literal)
+    assert term.datatype == ox.NamedNode(str(XSD) + 'integer')
+
+
+def test_language_tagged_literal():
+    term = string_to_oxi_term('"hello"@en')
+    assert isinstance(term, ox.Literal)
+    assert term.language == 'en'
+
+
+def test_literal_value():
+    term = string_to_oxi_term('"hello"')
+    assert term.value == 'hello'
+
+
+# --- Rejected  ---
+
+
+def test_empty_string_rejected():
+    with pytest.raises(ValueError):
+        string_to_oxi_term('')
+
+
+def test_blank_node_rejected():
+    with pytest.raises(ValueError):
+        string_to_oxi_term('_:foo')
+
+
+def test_unquoted_literal_rejected():
+    with pytest.raises(ValueError):
+        string_to_oxi_term('hello')
