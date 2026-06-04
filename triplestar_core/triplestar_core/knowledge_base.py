@@ -152,7 +152,7 @@ class TriplestarKnowledgeBase:
             if isinstance(result, QueryBoolean):
                 return bool(result)
             elif isinstance(result, QuerySolutions):
-                return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # type: ignore
+                return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # ty:ignore[unresolved-attribute]
             raise ValueError('CONSTRUCT and DESCRIBE queries are not supported in TriplestarKB')
 
         except Exception as e:

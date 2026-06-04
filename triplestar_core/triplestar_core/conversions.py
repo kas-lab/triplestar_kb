@@ -86,7 +86,8 @@ rdflib.term.bind(
 
 
 def to_rdf_literal(msg) -> ox.Literal | None:
-    """Convert a ROS message or python value to a pyoxigraph RDF literal.
+    """
+    Convert a ROS message or python value to a pyoxigraph RDF literal.
 
     * ROS messages are unwrapped via ``_ROS_TO_PYTHON``
     * Everything else is passed to ``rdflib.Literal()`` which uses
