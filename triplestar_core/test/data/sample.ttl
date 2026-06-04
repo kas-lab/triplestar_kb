@@ -1,0 +1,97 @@
+@prefix ex:   <http://example.org/> .
+@prefix geo:  <http://www.opengis.net/ont/geosparql#> .
+@prefix geof: <http://www.opengis.net/def/function/geosparql/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# =============================================================================
+#  Zones
+# =============================================================================
+
+ex:zone_a a ex:Zone ;
+    rdfs:label "Zone A" ;
+    ex:code "A" ;
+    ex:area_m2 "400.0"^^xsd:double ;
+    geo:hasGeometry ex:zone_a_geom .
+
+ex:zone_a_geom a geo:Geometry ;
+    geo:asWKT "POLYGON ((0 0, 20 0, 20 20, 0 20, 0 0))"^^geo:wktLiteral .
+
+ex:zone_b a ex:Zone ;
+    rdfs:label "Zone B" ;
+    ex:code "B" ;
+    ex:area_m2 "100.0"^^xsd:double ;
+    geo:hasGeometry ex:zone_b_geom .
+
+ex:zone_b_geom a geo:Geometry ;
+    geo:asWKT "POLYGON ((5 5, 15 5, 15 15, 5 15, 5 5))"^^geo:wktLiteral .
+
+ex:zone_c a ex:Zone ;
+    rdfs:label "Zone C" ;
+    ex:code "C" ;
+    ex:area_m2 "25.0"^^xsd:double ;
+    geo:hasGeometry ex:zone_c_geom .
+
+ex:zone_c_geom a geo:Geometry ;
+    geo:asWKT "POLYGON ((30 30, 35 30, 35 35, 30 35, 30 30))"^^geo:wktLiteral .
+
+# =============================================================================
+#  Robots
+# =============================================================================
+
+ex:robot_1 a ex:Robot ;
+    rdfs:label "Robot 1" ;
+    ex:inZone ex:zone_a ;
+    ex:batteryLevel "0.85"^^xsd:double ;
+    ex:active "true"^^xsd:boolean ;
+    geo:hasGeometry ex:robot_1_geom .
+
+ex:robot_1_geom a geo:Geometry ;
+    geo:asWKT "POINT (3 3)"^^geo:wktLiteral .
+
+ex:robot_2 a ex:Robot ;
+    rdfs:label "Robot 2" ;
+    ex:inZone ex:zone_b ;
+    ex:batteryLevel "0.42"^^xsd:double ;
+    ex:active "true"^^xsd:boolean ;
+    geo:hasGeometry ex:robot_2_geom .
+
+ex:robot_2_geom a geo:Geometry ;
+    geo:asWKT "POINT (10 10)"^^geo:wktLiteral .
+
+ex:robot_3 a ex:Robot ;
+    rdfs:label "Robot 3" ;
+    ex:inZone ex:zone_c ;
+    ex:batteryLevel "0.10"^^xsd:double ;
+    ex:active "false"^^xsd:boolean ;
+    geo:hasGeometry ex:robot_3_geom .
+
+ex:robot_3_geom a geo:Geometry ;
+    geo:asWKT "POINT (32 32)"^^geo:wktLiteral .
+
+# =============================================================================
+#  Relations between zones
+# =============================================================================
+
+ex:zone_a ex:contains ex:zone_b .
+ex:zone_a ex:adjacentTo ex:zone_c .
+ex:zone_b ex:adjacentTo ex:zone_c .
+
+# =============================================================================
+#  Tasks
+# =============================================================================
+
+ex:task_1 a ex:Task ;
+    rdfs:label "Inspect Zone B" ;
+    ex:assignedTo ex:robot_1 ;
+    ex:targetZone ex:zone_b ;
+    ex:priority "1"^^xsd:integer ;
+    ex:completed "false"^^xsd:boolean .
+
+ex:task_2 a ex:Task ;
+    rdfs:label "Charge Robot 3" ;
+    ex:assignedTo ex:robot_3 ;
+    ex:targetZone ex:zone_c ;
+    ex:priority "2"^^xsd:integer ;
+    ex:completed "false"^^xsd:boolean .
