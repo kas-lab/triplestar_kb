@@ -12,7 +12,8 @@ _RegisteredFunc = FunctionType
 
 
 class FunctionRegistry:
-    """Registry for SPARQL ``fn:`` extension functions.
+    """
+    Registry for SPARQL ``fn:`` extension functions.
 
     Input ``pyoxigraph.Literal`` arguments are automatically converted to
     their Python values via ``from_ox().value``, so function bodies receive
