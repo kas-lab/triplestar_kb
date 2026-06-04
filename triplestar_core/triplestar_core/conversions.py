@@ -128,9 +128,6 @@ def rdf_literal_to_python(literal: ox.Literal) -> Any:
 
 
 def string_to_oxi_term(string: str) -> ox.NamedNode | ox.Literal | ox.BlankNode:
-    if not string.startswith('<') and not string.startswith('"'):
-        raise ValueError(f'Invalid RDF term (must be <uri> or "literal"...): {string}')
-
     term = from_n3(string)
     if not isinstance(term, RdflibNode):
         raise ValueError(f'Cannot parse {string} to an rdf term')

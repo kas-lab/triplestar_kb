@@ -349,23 +349,37 @@ class TestRoundtrip:
 class TestStringToOxiTerm:
     """Parsing N3-formatted strings into pyoxigraph terms."""
 
-    # -- URIs -------------------------------------------------------------
+    # -- IRIs -------------------------------------------------------------
 
-    def test_absolute_iri(self) -> None:
-        term = string_to_oxi_term('<http://example.org/x>')
+    @pytest.mark.parametrize(
+        ('valid_iri', 'expected'),
+        [
+            pytest.param(
+                'xsd:integer',
+                ox.NamedNode('http://www.w3.org/2001/XMLSchema#integer'),
+                id='known prefixed IRI',
+            ),
+            pytest.param(
+                '<http://example.org/x>', ox.NamedNode('http://example.org/x'), id='absolute IRI'
+            ),
+        ],
+    )
+    def test_valid_iri(self, valid_iri: str, expected: ox.NamedNode) -> None:
+        term = string_to_oxi_term(valid_iri)
         assert isinstance(term, ox.NamedNode)
-        assert term.value == 'http://example.org/x'
+        assert term == expected
 
     @pytest.mark.parametrize(
         'invalid_iri',
         [
             pytest.param('<foo/bar>', id='relative IRI'),
             pytest.param('http://example.org/x', id='bare (no angle brackets)'),
-            pytest.param('xsd:integer', id='prefixed name'),
+            # pytest.param('xsd:integer', id='prefixed name'),
+            pytest.param('random:integer', id='unknown prefix'),
         ],
     )
     def test_invalid_iri_rejected(self, invalid_iri: str) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(Exception):
             string_to_oxi_term(invalid_iri)
 
     # -- Literals ---------------------------------------------------------
