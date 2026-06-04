@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from triplestar_core.config import QueryServiceConfig
 from triplestar_core.config import QueryServicesConfig
-from triplestar_core.kb_lifecycle_node import TriplestarKBNode
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service import FileQueryService
+
+if TYPE_CHECKING:
+    from triplestar_core.kb_lifecycle_node import TriplestarKBNode
 
 
 class QueryServiceManager:
