@@ -19,6 +19,7 @@ import pyoxigraph as ox
 import rdflib
 from rdflib import Literal
 from rdflib.namespace import GEO
+from rdflib.namespace import NamespaceManager
 from rdflib.term import Node as RdflibNode
 from rdflib.util import from_n3
 from shapely import Point as ShapelyPoint
@@ -128,7 +129,8 @@ def rdf_literal_to_python(literal: ox.Literal) -> Any:
 
 
 def string_to_oxi_term(string: str) -> ox.NamedNode | ox.Literal | ox.BlankNode:
-    term = from_n3(string)
+    nsm = NamespaceManager(rdflib.graph.Graph(), bind_namespaces='core')
+    term = from_n3(string, nsm=nsm)
     if not isinstance(term, RdflibNode):
         raise ValueError(f'Cannot parse {string} to an rdf term')
     ox_term = to_ox(term)
