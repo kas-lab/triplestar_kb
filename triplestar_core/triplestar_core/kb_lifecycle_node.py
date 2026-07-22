@@ -229,15 +229,15 @@ class TriplestarKBNode(LifecycleNode):
 
     def _load_kb_config(self, path: Path) -> KBConfig:
         data = self._load_yaml(path)
-        return KBConfig.model_validate(data)
+        return KBConfig.parse_obj(data)
 
     def _load_subscribers_config(self, path: Path) -> SubscribersConfig:
         data = self._load_yaml(path)
-        return SubscribersConfig.model_validate(data)
+        return SubscribersConfig.parse_obj(data)
 
     def _load_query_service_config(self, path: Path) -> QueryServicesConfig:
         data = self._load_yaml(path)
-        return QueryServicesConfig.model_validate(data)
+        return QueryServicesConfig.parse_obj(data)
 
     def _load_kb_functions(self, folder: Path):
         if not folder.is_dir():
