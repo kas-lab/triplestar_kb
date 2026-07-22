@@ -2,13 +2,46 @@
 
 TriplestarKB is a ROS2-enabled knowledge base, backed by the [oxigraph](https://github.com/oxigraph/oxigraph) SPARQL graph database.
 
-## Generating your own bringup package
+## Quick Start
 
-To generate your own bringup package, run the following command from your `/src` folder (assuming that's where you cloned this repo). Make sure to replace `{your_custom_bringup_name}` with the actual name you want for your package (e.g., `my_custom_triplestar_bringup`):
+### Repo and dependencies
+
+First, clone the current repo into the `src` folder of your ROS2 workspace.
+```bash
+cd src
+git clone https://github.com/kas-lab/triplestar_kb.git 
+cd ..
+```
+
+Secondly, install the needed dependencies via rosdep:
+```bash
+rosdep install -i --from-path src/triplestar_kb -r -y
+```
+
+### Generate your own bringup package
+
+*TriplestarKB* is configured on a per-scenario basis using _bringup packages_. 
+To generate a new bringup package, run the following from the `src` folder of your workspace.
+```bash
+cd src
+python3 -m cookiecutter triplestar_kb/bringup_template
+```
+
+This will result in a new bringup package with your chosen name in the `src` folder.
+
+### Build the package
 
 ```bash
-copier copy triplestar_kb/bringup_template {your_custom_bringup_name}
+colcon build --symlink-install --merge-install --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select {your_custom_bringup_name}
 ```
+
+### Running
+
+After sourcing the workspace, run triplestar with your custom config using:
+```bash
+ros2 launch {your_custom_bringup_name} {your_custom_bringup_name}_triplestar.launch.xml
+```
+
 
 ## ROS to RDF conversions
 

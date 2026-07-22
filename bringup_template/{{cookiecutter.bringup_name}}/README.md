@@ -1,4 +1,4 @@
-# {{bringup_name}} — TriplestarKB Bringup Package
+# {{cookiecutter.bringup_name}} — TriplestarKB Bringup Package
 
 Place SPARQL extension functions in ``functions/`` using the ``@kb_function`` decorator.
 
