@@ -132,8 +132,8 @@ def string_to_oxi_term(string: str) -> ox.NamedNode | ox.Literal | ox.BlankNode:
     nsm = NamespaceManager(rdflib.graph.Graph(), bind_namespaces='core')
     term = from_n3(string, nsm=nsm)
     if not isinstance(term, RdflibNode):
-        raise ValueError(f'Cannot parse {string} to an rdf term')
+        raise TypeError(f'Cannot parse {string} to an rdf term')
     ox_term = to_ox(term)
     if not isinstance(ox_term, (ox.NamedNode, ox.Literal)):
-        raise ValueError(f'Cannot convert {string} to a IRI or Literal')
+        raise TypeError(f'Cannot convert {string} to a IRI or Literal')
     return ox_term

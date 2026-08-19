@@ -98,7 +98,7 @@ class TriplestarKnowledgeBase:
                         base_iri=self.base_iri,
                     )
                 loaded += 1
-            except Exception as e:
+            except OSError as e:
                 self.logger.error(f'Failed to load {f}: {e}')
         self.logger.info(f'Loaded {loaded}/{len(file_paths)} files')
         return loaded
@@ -114,6 +114,7 @@ class TriplestarKnowledgeBase:
             )
         except Exception as e:
             self.logger.error(f'Update failed: {e}')
+            raise
 
     @staticmethod
     def make_substitutions(
@@ -155,7 +156,7 @@ class TriplestarKnowledgeBase:
                 return result.serialize(format=QueryResultsFormat.JSON).decode('utf-8')  # ty:ignore[unresolved-attribute]
             raise ValueError('CONSTRUCT and DESCRIBE queries are not supported in TriplestarKB')
 
-        except Exception as e:
+        except (ValueError, OSError, RuntimeError) as e:
             self.logger.error(f'Query execution failed: {e}')
             return None
 

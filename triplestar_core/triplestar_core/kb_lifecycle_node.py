@@ -40,9 +40,14 @@ class TriplestarKBNode(LifecycleNode):
 
         try:
             share_dir = Path(get_package_share_directory(bringup_package))
-        except Exception as e:
+        except FileNotFoundError as e:
             self.get_logger().error(
                 f'Could not find package share directory for "{bringup_package}": {e}'
+            )
+            return TransitionCallbackReturn.ERROR
+        except (KeyError, ValueError) as e:
+            self.get_logger().error(
+                f'Error accessing package share directory for "{bringup_package}": {e}'
             )
             return TransitionCallbackReturn.ERROR
 
@@ -100,8 +105,8 @@ class TriplestarKBNode(LifecycleNode):
             for name, func in registry:
                 self.kb.add_kb_function(name, func)
 
-        except Exception:
-            self.get_logger().error(f'Configuration failed:\n{traceback.format_exc()}')
+        except (FileNotFoundError, KeyError, ValueError, RuntimeError, TypeError) as e:
+            self.get_logger().error(f'Configuration failed: {e}\n{traceback.format_exc()}')
             return TransitionCallbackReturn.ERROR
 
         self.get_logger().info('KB node configured successfully')
