@@ -36,18 +36,20 @@ class TriplestarKBNode(LifecycleNode):
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring KB node...')
 
-        bringup_package = self.get_parameter('bringup_package').value
+        bringup_package: str = self.get_parameter('bringup_package').value
+
+        if not bringup_package:
+            self.get_logger().error(
+                'No bringup package specified. Please create a custom TriplestarKB '
+                'bringup package and run from there (instructions in the README)'
+            )
+            return TransitionCallbackReturn.ERROR
 
         try:
             share_dir = Path(get_package_share_directory(bringup_package))
-        except FileNotFoundError as e:
+        except (FileNotFoundError, KeyError, ValueError) as e:
             self.get_logger().error(
                 f'Could not find package share directory for "{bringup_package}": {e}'
-            )
-            return TransitionCallbackReturn.ERROR
-        except (KeyError, ValueError) as e:
-            self.get_logger().error(
-                f'Error accessing package share directory for "{bringup_package}": {e}'
             )
             return TransitionCallbackReturn.ERROR
 

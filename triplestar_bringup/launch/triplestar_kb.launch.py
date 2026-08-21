@@ -22,7 +22,7 @@ def generate_launch_description():
 
     bringup_package_arg = DeclareLaunchArgument(
         'bringup-package',
-        default_value='triplestar_bringup',
+        default_value='',
         description='Name of custom TriplestarKB bringup package',
     )
     bringup_package = LaunchConfiguration('bringup-package')
