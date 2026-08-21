@@ -27,6 +27,12 @@ def kb_with_data(kb):
 
 
 @pytest.fixture
+def kb_obj_room_scenario(kb):
+    kb.load_files([_DATA_DIR / 'obj_room.ttl'])
+    return kb
+
+
+@pytest.fixture
 def kb_with_triple(kb):
     """KB containing a single IRI triple: ex:x ex:p ex:y."""
     kb.store.add(
@@ -128,3 +134,55 @@ class TestSubstitutions:
                 'ASK { ?s <http://example.org/p> <http://example.org/y> }',
                 substitutions={'s': 'http://example.org/x'},
             )
+
+    @pytest.mark.parametrize(
+        ('room', 'min_height', 'expected_count', 'expected_obj'),
+        [
+            pytest.param(
+                '<http://example.org/room1>',
+                '"5"^^<http://www.w3.org/2001/XMLSchema#integer>',
+                1,
+                'http://example.org/obj1',
+                id='obj1 in room1, height 10 > 5',
+            ),
+            pytest.param(
+                '<http://example.org/room1>',
+                '"15"^^<http://www.w3.org/2001/XMLSchema#integer>',
+                0,
+                None,
+                id='obj1 in room1, height 10 not > 15',
+            ),
+            pytest.param(
+                '<http://example.org/room2>',
+                '"5"^^<http://www.w3.org/2001/XMLSchema#integer>',
+                0,
+                None,
+                id='no objects in room2',
+            ),
+        ],
+    )
+    def test_filter_substitution(
+        self, kb_obj_room_scenario, room, min_height, expected_count, expected_obj
+    ) -> None:
+
+        # Parametrized query: find objects in a given room taller than a given min height
+        select_query = """
+            SELECT ?obj ?min_height ?height ?room WHERE {
+                ?obj <http://example.org/height> ?obj_height .
+                ?obj <http://example.org/locatedIn> ?room .
+                FILTER(?obj_height > ?min_height)
+            }
+        """
+        result = kb_obj_room_scenario.query(
+            select_query,
+            substitutions={
+                'room': room,
+                'min_height': min_height,
+            },
+        )
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        bindings = parsed['results']['bindings']
+        assert len(bindings) == expected_count
+        if expected_obj is not None:
+            assert bindings[0]['obj']['value'] == expected_obj

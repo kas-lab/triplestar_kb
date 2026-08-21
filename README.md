@@ -1,6 +1,8 @@
 # TriplestarKB
 
-TriplestarKB is a ROS2-enabled knowledge base, backed by the [oxigraph](https://github.com/oxigraph/oxigraph) SPARQL graph database.
+TriplestarKB is a ROS 2 enabled knowledge base backed by [Oxigraph](https://github.com/oxigraph/oxigraph), a high-performance SPARQL graph database.
+
+📖 **Full documentation**: [https://kas-lab.github.io/triplestar_kb](https://kas-lab.github.io/triplestar_kb)
 
 ## Quick Start
 

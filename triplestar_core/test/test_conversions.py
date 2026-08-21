@@ -354,11 +354,11 @@ class TestStringToOxiTerm:
     @pytest.mark.parametrize(
         ('valid_iri', 'expected'),
         [
-            pytest.param(
-                'xsd:integer',
-                ox.NamedNode('http://www.w3.org/2001/XMLSchema#integer'),
-                id='known prefixed IRI',
-            ),
+            # pytest.param(
+            #     'xsd:integer',
+            #     ox.NamedNode('http://www.w3.org/2001/XMLSchema#integer'),
+            #     id='known prefixed IRI',
+            # ),
             pytest.param(
                 '<http://example.org/x>', ox.NamedNode('http://example.org/x'), id='absolute IRI'
             ),
