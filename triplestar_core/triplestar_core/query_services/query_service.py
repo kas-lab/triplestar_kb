@@ -8,6 +8,8 @@ from rclpy.node import Node
 from triplestar_msgs.srv import AskQuery
 from triplestar_msgs.srv import SelectQuery
 
+from triplestar_core.service_contract import QUERY_SERVICE_PREFIX
+
 QueryType = Literal['select', 'ask']
 
 _SERVICE_TYPES: dict[QueryType, type] = {
@@ -40,7 +42,7 @@ class FileQueryService:
         self._query_fn = query_fn
 
         query_type = _detect_query_type(query_file)
-        srv_name = f'/triplestar/query/{name}'
+        srv_name = QUERY_SERVICE_PREFIX + name
 
         match query_type:
             case 'select':
@@ -61,7 +63,7 @@ class FileQueryService:
                 raise TypeError(f'Expected str result for SELECT query, got {type(result)}')
             response.success = True
             response.result = result
-        except Exception as e:
+        except (TypeError, RuntimeError) as e:
             self.logger.error(f'Query failed: {e}')
             response.success = False
             response.error_message = str(e)
@@ -74,7 +76,7 @@ class FileQueryService:
                 raise TypeError(f'Expected bool result for ASK query, got {type(result)}')
             response.success = True
             response.result = result
-        except Exception as e:
+        except (TypeError, RuntimeError) as e:
             self.logger.error(f'Query failed: {e}')
             response.success = False
             response.error_message = str(e)
