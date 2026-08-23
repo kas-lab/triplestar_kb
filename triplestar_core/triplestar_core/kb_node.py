@@ -17,7 +17,7 @@ def main(args=None):
         node.get_logger().info('Keyboard interrupt, shutting down.\n')
 
     node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

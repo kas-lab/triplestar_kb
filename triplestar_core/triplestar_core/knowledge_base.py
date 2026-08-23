@@ -65,7 +65,7 @@ class TriplestarKnowledgeBase:
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
 
-        self.reasoner = reasonable.PyReasoner()  # type:ignore
+        reasoner = reasonable.PyReasoner()  # type:ignore
 
         # filter out RDF* triples (reasoner does not support RDF*)
         def is_plain_triple(t):
@@ -77,10 +77,10 @@ class TriplestarKnowledgeBase:
             if is_plain_triple(from_ox(q.triple))
         ]
 
-        self.reasoner.update_graph(triples)
+        reasoner.update_graph(triples)
         inferred_quads = [
             Quad(to_ox(s), to_ox(p), to_ox(o), self.reasoned_graph)  # type: ignore
-            for s, p, o in self.reasoner.reason()
+            for s, p, o in reasoner.reason()
         ]
 
         # refresh reasoned graph
