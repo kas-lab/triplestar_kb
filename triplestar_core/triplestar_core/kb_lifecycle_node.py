@@ -16,6 +16,7 @@ from triplestar_core.functions import registry
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
+from triplestar_core.tracing.tracer_factory import get_tracer
 from triplestar_msgs.srv import SPARQLQuery
 
 
@@ -110,6 +111,9 @@ class TriplestarKBNode(LifecycleNode):
         except (FileNotFoundError, KeyError, ValueError, RuntimeError, TypeError) as e:
             self.get_logger().error(f'Configuration failed: {e}\n{traceback.format_exc()}')
             return TransitionCallbackReturn.ERROR
+
+        # --- TRACING ---
+        self.tracer = get_tracer()
 
         self.get_logger().info('KB node configured successfully')
         return TransitionCallbackReturn.SUCCESS

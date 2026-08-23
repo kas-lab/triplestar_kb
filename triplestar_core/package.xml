@@ -27,8 +27,10 @@
   <depend>python3-reasonable-pip</depend>
   <depend>python3-shapely</depend>
   <depend>python3-yaml</depend>
+  <depend>python3-opentelemetry-api-pip</depend>
 
 
+  <test_depend>python3-opentelemetry-sdk-pip</test_depend>
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
