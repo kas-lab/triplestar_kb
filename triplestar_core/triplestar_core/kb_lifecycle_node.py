@@ -7,7 +7,6 @@ from ament_index_python import get_package_share_directory
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import LifecycleState
 from rclpy.lifecycle import TransitionCallbackReturn
-from triplestar_msgs.srv import SPARQLQuery
 import yaml
 
 from triplestar_core.config import KBConfig
@@ -17,6 +16,7 @@ from triplestar_core.functions import registry
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
+from triplestar_msgs.srv import SPARQLQuery
 
 
 class TriplestarKBNode(LifecycleNode):

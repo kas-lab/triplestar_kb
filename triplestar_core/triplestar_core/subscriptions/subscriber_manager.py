@@ -1,7 +1,7 @@
+import base64
 from collections.abc import Callable
 from pathlib import Path
 import time
-import base64
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
@@ -10,8 +10,8 @@ from jinja2 import TemplateNotFound
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import LifecycleNode
-from rclpy.serialization import serialize_message
 from rclpy.node import Node
+from rclpy.serialization import serialize_message
 from ros2topic.api import get_msg_class
 import tf2_ros
 
@@ -24,6 +24,7 @@ from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TopicLatestSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TransformLatestSubscriber
+
 
 def _serialize_filter(value) -> str:
     return base64.b64encode(serialize_message(value)).decode('utf-8')

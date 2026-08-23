@@ -60,7 +60,9 @@ def kb_with_literal(kb):
 class TestAskQuery:
     def test_returns_false_on_empty_store(self, kb) -> None:
         assert (
-            kb.query('ASK { <http://example.org/x> <http://example.org/p> <http://example.org/y> }')
+            kb.query(
+                'ASK { <http://example.org/x> <http://example.org/p> <http://example.org/y> }'
+            )
             is False
         )
 

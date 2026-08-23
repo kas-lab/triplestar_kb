@@ -409,7 +409,9 @@ class TestStringToOxiTerm:
                 None,
                 id='boolean explicit iri',
             ),
-            pytest.param('"true"^^xsd:boolean', 'true', XSD.boolean, None, id='boolean xsd prefix'),
+            pytest.param(
+                '"true"^^xsd:boolean', 'true', XSD.boolean, None, id='boolean xsd prefix'
+            ),
             pytest.param('"hello"@en', 'hello', None, 'en', id='language tagged'),
         ],
     )
