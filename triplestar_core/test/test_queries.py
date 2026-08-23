@@ -122,8 +122,8 @@ class TestSubstitutions:
         result = kb_with_literal.query('ASK WHERE { ?s ?p ?o }', substitutions={'o': term})
         assert result is expected
 
-    def test_invalid_substitution_raises(self, kb) -> None:
-        with pytest.raises(Exception):
+    def test_invalid_substitution_raises(self, kb: TriplestarKnowledgeBase) -> None:
+        with pytest.raises(Exception):  # noqa: B017
             kb.query(
                 'ASK { ?s <http://example.org/p> <http://example.org/y> }',
                 substitutions={'s': 'http://example.org/x'},

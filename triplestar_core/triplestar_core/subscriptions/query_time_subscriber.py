@@ -94,6 +94,8 @@ class TransformLatestSubscriber(BaseLatestSubscriber):
                 timeout=rclpy.duration.Duration(seconds=1.0),  # type: ignore
             )
             return transform.transform.translation
-        except Exception as e:
-            self._logger.warn(f'TF lookup failed for {self._from_frame} -> {self._to_frame}: {e}')
+        except Exception as e:  # noqa: BLE001
+            self._logger.warning(
+                f'TF lookup failed for {self._from_frame} -> {self._to_frame}: {e}'
+            )
             return None

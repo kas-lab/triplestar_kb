@@ -169,5 +169,5 @@ class SubscriptionManager:
                     msg_type=msg_type,
                     callback_group=self.subscriber_cb_group,
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.logger.error(f'Failed to create insertion subscriber "{name}": {e}')

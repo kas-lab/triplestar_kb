@@ -1,4 +1,5 @@
-"""SPARQL extension functions.
+"""
+SPARQL extension functions.
 
 Arguments are auto-converted from RDF literals to Python types.
 

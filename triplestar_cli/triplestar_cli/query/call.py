@@ -5,6 +5,7 @@ from ros2cli.node.strategy import NodeStrategy
 from ros2cli.verb import VerbExtension
 from rosidl_runtime_py.utilities import get_service
 from triplestar_core.service_contract import QUERY_SERVICE_PREFIX
+
 from triplestar_msgs.msg import QuerySubstitution
 from triplestar_msgs.srv import SPARQLQuery
 
