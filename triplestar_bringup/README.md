@@ -1,7 +1,27 @@
 # TriplestarKB Bringup Package
 
-This is an example bringup package for TriplestarKB.
-For your own workspace, copy this package into your src folder and create a custom configuration.
+This is the reference bringup package for TriplestarKB. It also bundles the
+template used to generate new bringup packages.
+
+## Generate a New Bringup Package
+
+Rather than copying this package by hand, generate a fresh bringup package from
+the bundled template using the Triplestar CLI:
+
+```bash
+ros2 triplestar bringup new
+```
+
+You will be prompted for the package name. To skip the prompt, pass it with
+`--name`:
+
+```bash
+ros2 triplestar bringup new --name my_bringup
+```
+
+This renders the `bringup_template/` directory into a new package in your
+workspace's `src/` folder (pass `--output-dir` to write somewhere else). The
+generated package follows the folder structure described below.
 
 ## Folder Structure
 

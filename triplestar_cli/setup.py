@@ -29,13 +29,18 @@ setup(
         'ros2cli.extension_point': [
             'triplestar.verb = triplestar_cli.verb:VerbExtension',
             'triplestar.query.verb = triplestar_cli.query:VerbExtension',
+            'triplestar.bringup.verb = triplestar_cli.bringup:VerbExtension',
         ],
         'triplestar.verb': [
             'query = triplestar_cli.verb.query:QueryVerb',
+            'bringup = triplestar_cli.verb.bringup:BringupVerb',
         ],
         'triplestar.query.verb': [
             'list = triplestar_cli.query.list:ListVerb',
             'call = triplestar_cli.query.call:CallVerb',
+        ],
+        'triplestar.bringup.verb': [
+            'new = triplestar_cli.bringup.new:NewVerb',
         ],
     },
 )

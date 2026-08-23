@@ -23,18 +23,20 @@ rosdep install -i --from-path src/triplestar_kb -r -y
 *TriplestarKB* is configured on a per-scenario basis using _bringup packages_. 
 To generate a new bringup package, run the following from your sourced workspace:
 ```bash
-ros2 run triplestar_core new_bringup
+ros2 triplestar bringup new
+```
+You will be prompted for the package name. To skip the prompt, pass it with
+`--name`:
+```bash
+ros2 triplestar bringup new --name my_bringup
 ```
 
 The generated package is placed in the `src/` folder of the active colcon
-workspace automatically. This runs cookiecutter against the bundled template,
-and any cookiecutter arguments are passed through — for example to skip the
-interactive prompt:
+workspace automatically. To write somewhere other than the workspace `src/`,
+pass `--output-dir`:
 ```bash
-ros2 run triplestar_core new_bringup --no-input bringup_name=my_bringup
+ros2 triplestar bringup new --name my_bringup --output-dir /path/to/dir
 ```
-
-To write somewhere other than the workspace `src/`, pass `--output-dir`.
 
 ### Build the package
 
