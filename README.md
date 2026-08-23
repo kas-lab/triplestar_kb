@@ -92,4 +92,14 @@ These query time subscribers can be added by modifying the config file.
 
 ROS(2) makes use of the `tf2` library to publish transforms between coordinate frames
 
+## Contributing
+
+Contributions are welcome. Please install [pre-commit](https://pre-commit.com/)
+and enable the hooks once:
+
+    pip install pre-commit
+    pre-commit install
+
+This runs ruff (lint + format) automatically on every commit.
+
 - _Pellissier Tanon, T._ (n.d.). **Oxigraph**. [![DOI:10.5281/zenodo.7408022](https://zenodo.org/badge/DOI/10.5281/zenodo.7408022.svg)](https://doi.org/10.5281/zenodo.7408022)
