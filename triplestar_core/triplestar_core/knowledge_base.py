@@ -3,6 +3,7 @@ from inspect import signature
 import logging
 from pathlib import Path
 
+from opentelemetry import trace
 from oxrdflib._converter import from_ox
 from oxrdflib._converter import to_ox
 from pyoxigraph import BlankNode
@@ -19,6 +20,8 @@ from pyoxigraph import Variable
 import reasonable
 
 from triplestar_core.conversions import string_to_oxi_term
+
+TRACER = trace.get_tracer('triplestar_bench')
 
 
 class TriplestarKnowledgeBase:
@@ -62,6 +65,7 @@ class TriplestarKnowledgeBase:
     def add_query_time_function(self, name: str, function: Callable):
         self._add_function(name, function, 'qt')
 
+    @TRACER.start_as_current_span('run_reasoning')
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
 
