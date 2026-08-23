@@ -19,7 +19,7 @@ extend-select = [
 ignore = ["D1", "D212"]
 
 [lint.per-file-ignores]
-"/triplestar_cli/triplestar_cli/*.py" = ["T201"]
+"triplestar_cli/triplestar_cli/**/*.py" = ["T201"]
 
 [lint.pydocstyle]
 convention = "pep257"
