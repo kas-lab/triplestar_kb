@@ -1,0 +1,29 @@
+line-length = 99
+
+[format]
+quote-style = "single"
+indent-style = "space"
+
+[lint]
+extend-select = [
+  "T100",  # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
+  "D",
+  "D213",
+  "T2",
+  "TD",
+  "UP",
+  "I",
+  "N",
+  "E"
+]
+ignore = ["D1", "D212"]
+
+[lint.per-file-ignores]
+"/triplestar_cli/triplestar_cli/*.py" = ["T201"]
+
+[lint.pydocstyle]
+convention = "pep257"
+
+[lint.isort]
+force-single-line = true
+force-sort-within-sections = true
