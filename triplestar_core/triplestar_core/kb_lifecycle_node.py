@@ -31,6 +31,9 @@ class TriplestarKBNode(LifecycleNode):
         self.query_service_manager: QueryServiceManager | None = None
 
         self.declare_parameter('bringup_package', 'triplestar_bringup')
+        # allow setting this parameter to override with a single file to preload
+        # (useful for tracing)
+        self.declare_parameter('override_preload_file', value='')
 
         self.get_logger().info('Triplestar KB node created')
 
@@ -77,30 +80,39 @@ class TriplestarKBNode(LifecycleNode):
                 self.get_logger().info('Cleared store on startup')
 
             # --- PRELOAD ---
-            if not self._preload_files(share_dir / 'preload'):
-                return TransitionCallbackReturn.ERROR
+            preload_dir = share_dir / 'preload'
+            override_preload_file = self.get_parameter('override_preload_file').value
+            preload_files = (
+                [override_preload_file] if override_preload_file else self.config.preload_files
+            )
+            if override_preload_file:
+                self.get_logger().warn(f'Overriding preload file: {override_preload_file}')
+
+            self._preload_files(preload_dir, preload_files)
 
             # --- SUBSCRIBERS ---
             subscriber_config = self._load_subscribers_config(
                 share_dir / 'config' / 'subscribers.yaml'
             )
-            self.subscriber_manager = SubscriptionManager(
-                self,
-                config=subscriber_config,
-                kb=self.kb,
-                templates_dir=share_dir / 'templates',
-            )
+            if subscriber_config is not None:
+                self.subscriber_manager = SubscriptionManager(
+                    self,
+                    config=subscriber_config,
+                    kb=self.kb,
+                    templates_dir=share_dir / 'templates',
+                )
 
             # --- QUERY SERVICES ---
             query_config = self._load_query_service_config(
                 share_dir / 'config' / 'query_services.yaml'
             )
-            self.query_service_manager = QueryServiceManager(
-                self,
-                config=query_config,
-                kb=self.kb,
-                queries_dir=share_dir / 'queries',
-            )
+            if query_config is not None:
+                self.query_service_manager = QueryServiceManager(
+                    self,
+                    config=query_config,
+                    kb=self.kb,
+                    queries_dir=share_dir / 'queries',
+                )
 
             # --- KB FUNCTIONS ---
             self._load_kb_functions(share_dir / 'functions')
@@ -171,20 +183,17 @@ class TriplestarKBNode(LifecycleNode):
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
 
-    def _preload_files(self, preload_dir: Path) -> bool:
+    def _preload_files(self, preload_dir: Path, preload_files: list[str]):
         """Preload TTL files from the given preload directory."""
         if self.kb is None:
             raise RuntimeError('KB interface not initialized')
 
-        preload_files = self.config.preload_files
-
         if not preload_files:
             self.get_logger().info('No preload files configured, skipping preload')
-            return True
+            return
 
         if not preload_dir.is_dir():
-            self.get_logger().warn(f'Preload directory {preload_dir} does not exist')
-            return False
+            raise FileNotFoundError(f'Preload directory {preload_dir} does not exist')
 
         file_paths = [
             preload_dir / name
@@ -193,14 +202,12 @@ class TriplestarKBNode(LifecycleNode):
         ]
 
         if not file_paths:
-            self.get_logger().warn(f'No valid .ttl files found in {preload_dir}')
-            return False
+            raise FileNotFoundError(f'No valid .ttl files found in {preload_dir}')
 
         loaded = self.kb.load_files(file_paths)
 
         if loaded == 0:
-            self.get_logger().warn(f'No files were loaded from {preload_dir}')
-            return False
+            raise RuntimeError(f'No files were loaded from {preload_dir}')
 
         self.get_logger().info(f'Successfully preloaded {loaded} files from {preload_dir}')
         self.get_logger().info(f'Amount of triples in the KB: {self.kb.count_triples()}')
@@ -242,13 +249,43 @@ class TriplestarKBNode(LifecycleNode):
         data = self._load_yaml(path)
         return KBConfig.parse_obj(data)
 
-    def _load_subscribers_config(self, path: Path) -> SubscribersConfig:
-        data = self._load_yaml(path)
-        return SubscribersConfig.parse_obj(data)
+    def _load_subscribers_config(self, path: Path) -> SubscribersConfig | None:
+        if not path.is_file():
+            self.get_logger().warn(
+                f'Subscribers config file not found: {path}; skipping subscribers'
+            )
+            return None
 
-    def _load_query_service_config(self, path: Path) -> QueryServicesConfig:
         data = self._load_yaml(path)
-        return QueryServicesConfig.parse_obj(data)
+
+        config = SubscribersConfig.parse_obj(data)
+
+        if config.is_empty:
+            self.get_logger().warn(
+                f'Subscribers config file is empty: {path}; skipping subscribers'
+            )
+            return None
+
+        return config
+
+    def _load_query_service_config(self, path: Path) -> QueryServicesConfig | None:
+        if not path.is_file():
+            self.get_logger().warn(
+                f'Query services config file not found: {path}; skipping query services'
+            )
+            return None
+
+        data = self._load_yaml(path)
+
+        config = QueryServicesConfig.parse_obj(data)
+
+        if config.is_empty:
+            self.get_logger().warn(
+                f'Query services config file is empty: {path}; skipping query services'
+            )
+            return None
+
+        return config
 
     def _load_kb_functions(self, folder: Path):
         if not folder.is_dir():

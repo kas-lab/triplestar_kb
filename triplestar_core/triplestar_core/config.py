@@ -33,6 +33,14 @@ class SubscribersConfig(BaseModel):
     )
     query_time_tf_subscribers: dict[str, QueryTimeTFSubscriberConfig] = Field(default_factory=dict)
 
+    @property
+    def is_empty(self) -> bool:
+        return not (
+            self.insertion_subscribers
+            or self.query_time_topic_subscribers
+            or self.query_time_tf_subscribers
+        )
+
 
 class QueryServiceConfig(BaseModel):
     query_file: str
@@ -41,3 +49,7 @@ class QueryServiceConfig(BaseModel):
 
 class QueryServicesConfig(BaseModel):
     query_services: dict[str, QueryServiceConfig] = Field(default_factory=dict)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.query_services
