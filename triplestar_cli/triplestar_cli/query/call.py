@@ -37,8 +37,8 @@ class CallVerb(VerbExtension):
         parser.add_argument(
             '--timeout',
             type=float,
-            default=5.0,
-            help='Service call timeout in seconds (default: 5.0)',
+            default=10.0,
+            help='Service call timeout in seconds (default: 10.0)',
         )
 
     def main(self, *, args):
