@@ -35,6 +35,9 @@ class InsertionSubscriber:
 
     @TRACER.start_as_current_span('insertion_callback')
     def _callback(self, msg):
+        span = trace.get_current_span()
+        span.set_attribute('template', str(self._template.name))
+
         try:
             query = self._template.render(msg=msg)
             if query:

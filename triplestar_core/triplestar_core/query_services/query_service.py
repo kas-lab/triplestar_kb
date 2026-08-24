@@ -43,6 +43,7 @@ class FileQueryService:
             raise FileNotFoundError(f'Query file not found: {query_file}')
         self._query_file = query_file
         self._query_fn = query_fn
+        self.name = name
 
         query_type = _detect_query_type(query_file)
         srv_name = QUERY_SERVICE_PREFIX + name
@@ -57,6 +58,10 @@ class FileQueryService:
 
     @TRACER.start_as_current_span('run_query')
     def _run_query(self, request: SelectQuery.Request | AskQuery.Request) -> str | bool | None:
+        # set tracing atributes
+        span = trace.get_current_span()
+        span.set_attribute('query_name', self.name)
+
         substitutions: dict[str, str] = {b.variable: b.rdf_term for b in request.substitutions}
         return self._query_fn(self._query_file.read_text(), substitutions)
 
