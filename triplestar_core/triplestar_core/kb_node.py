@@ -4,8 +4,7 @@ import rclpy.executors
 from triplestar_core.kb_lifecycle_node import TriplestarKBNode
 
 
-def main(args=None):
-    rclpy.init(args=args)
+def run(args=None):
     node = TriplestarKBNode()
     executor = rclpy.executors.MultiThreadedExecutor()
     executor.add_node(node)
@@ -13,11 +12,19 @@ def main(args=None):
     try:
         node.get_logger().info('Starting TriplestarKBNode')
         executor.spin()
-    except KeyboardInterrupt:
-        node.get_logger().info('Keyboard interrupt, shutting down.\n')
+    finally:
+        node.destroy_node()
 
-    node.destroy_node()
-    rclpy.try_shutdown()
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        run(args)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

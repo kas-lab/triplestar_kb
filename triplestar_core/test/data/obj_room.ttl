@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:obj1 ex:locatedIn ex:room1 .
+ex:obj1 ex:height 10 .

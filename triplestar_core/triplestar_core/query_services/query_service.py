@@ -3,19 +3,23 @@ from pathlib import Path
 import re
 from typing import Literal
 
+from opentelemetry import trace
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 
 from triplestar_core.service_contract import QUERY_SERVICE_PREFIX
 from triplestar_msgs.srv import AskQuery
+from triplestar_msgs.srv import QueryInfo
 from triplestar_msgs.srv import SelectQuery
 
-QueryType = Literal['select', 'ask']
+QueryType = Literal['SELECT', 'ASK']
 
 _SERVICE_TYPES: dict[QueryType, type] = {
-    'select': SelectQuery,
-    'ask': AskQuery,
+    'SELECT': SelectQuery,
+    'ASK': AskQuery,
 }
+
+TRACER = trace.get_tracer('triplestar_bench')
 
 
 def _detect_query_type(query_file: Path) -> QueryType:
@@ -24,7 +28,7 @@ def _detect_query_type(query_file: Path) -> QueryType:
     match = re.search(r'\b(SELECT|ASK)\b', stripped, re.IGNORECASE)
     if match is None:
         raise ValueError(f'Could not detect query type in "{query_file}" — expected SELECT or ASK')
-    return match.group(1).lower()  # type: ignore
+    return match.group(1).upper()  # type: ignore
 
 
 class FileQueryService:
@@ -38,23 +42,32 @@ class FileQueryService:
         self.logger = node.get_logger().get_child(name)
         if not query_file.exists():
             raise FileNotFoundError(f'Query file not found: {query_file}')
-        self._query_file = query_file
-        self._query_fn = query_fn
+        self.query_file = query_file
+        self.query_fn = query_fn
+        self.name = name
 
-        query_type = _detect_query_type(query_file)
+        self.query_type = _detect_query_type(query_file)
+
         srv_name = QUERY_SERVICE_PREFIX + name
+        info_srv_name = QUERY_SERVICE_PREFIX + name + '/info'
 
-        match query_type:
-            case 'select':
+        match self.query_type:
+            case 'SELECT':
                 node.create_service(SelectQuery, srv_name, self._handle_select)
-            case 'ask':
+            case 'ASK':
                 node.create_service(AskQuery, srv_name, self._handle_ask)
+        node.create_service(QueryInfo, info_srv_name, self._handle_query_info)
 
-        self.logger.info(f'Query service "{srv_name}" ready ({query_type})')
+        self.logger.info(f'Query service "{srv_name}" ready ({self.query_type})')
 
+    @TRACER.start_as_current_span('run_query')
     def _run_query(self, request: SelectQuery.Request | AskQuery.Request) -> str | bool | None:
+        # set tracing atributes
+        span = trace.get_current_span()
+        span.set_attribute('query_name', self.name)
+
         substitutions: dict[str, str] = {b.variable: b.rdf_term for b in request.substitutions}
-        return self._query_fn(self._query_file.read_text(), substitutions)
+        return self.query_fn(self.query_file.read_text(), substitutions)
 
     def _handle_select(self, request: SelectQuery.Request, response: SelectQuery.Response):
         try:
@@ -80,4 +93,11 @@ class FileQueryService:
             self.logger.error(f'Query failed: {e}')
             response.success = False
             response.error_message = str(e)
+        return response
+
+    def _handle_query_info(self, _: QueryInfo.Request, response: QueryInfo.Response):
+        response.name = self.name
+        response.type = self.query_type
+        response.sparql = self.query_file.read_text()
+
         return response

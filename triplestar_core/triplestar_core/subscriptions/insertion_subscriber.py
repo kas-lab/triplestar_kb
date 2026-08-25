@@ -1,6 +1,9 @@
 from jinja2 import Template
+from opentelemetry import trace
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
+
+TRACER = trace.get_tracer('triplestar_bench')
 
 
 class InsertionSubscriber:
@@ -30,10 +33,14 @@ class InsertionSubscriber:
 
         self._logger.info(f'Subscribed to {self._topic}')
 
+    @TRACER.start_as_current_span('insertion_callback')
     def _callback(self, msg):
+        span = trace.get_current_span()
+        span.set_attribute('template', str(self._template.name))
+
         try:
             query = self._template.render(msg=msg)
             if query:
                 self._update_fn(query)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._logger.error(f'Insertion failed for {self._topic}: {e}')

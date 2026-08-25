@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/SetVizQuery.srv"
     "srv/SelectQuery.srv"
     "srv/AskQuery.srv"
+    "srv/QueryInfo.srv"
     DEPENDENCIES std_msgs rcl_interfaces
 )
 
