@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 from typing import Literal
 
+from opentelemetry import trace
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
 
@@ -16,6 +17,8 @@ _SERVICE_TYPES: dict[QueryType, type] = {
     'select': SelectQuery,
     'ask': AskQuery,
 }
+
+TRACER = trace.get_tracer('triplestar_bench')
 
 
 def _detect_query_type(query_file: Path) -> QueryType:
@@ -52,6 +55,7 @@ class FileQueryService:
 
         self.logger.info(f'Query service "{srv_name}" ready ({query_type})')
 
+    @TRACER.start_as_current_span('run_query')
     def _run_query(self, request: SelectQuery.Request | AskQuery.Request) -> str | bool | None:
         substitutions: dict[str, str] = {b.variable: b.rdf_term for b in request.substitutions}
         return self._query_fn(self._query_file.read_text(), substitutions)
