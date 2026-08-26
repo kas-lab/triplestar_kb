@@ -73,7 +73,7 @@ class QueryServiceManager:
         """Handle a SPARQL query request."""
         self.logger.debug(f'Received query request: {request}')
 
-        response.result = self.kb.query(request.query)
+        response.result = self.kb.query(request.query, reasoning=request.reasoning)
         response.success = response.result != ''
         return response
 
@@ -93,12 +93,11 @@ class QueryServiceManager:
             if not query_file.exists():
                 raise FileNotFoundError(f'Query file not found: {query_file}')
 
-            reasoning = srv_config.reasoning
             return FileQueryService(
                 node=node,
                 name=name,
                 query_file=query_file,
-                query_fn=lambda q, s, r=reasoning: kb.query(q, reasoning=r, substitutions=s),
+                query_fn=lambda q, reasoning, s: kb.query(q, reasoning=reasoning, substitutions=s),
             )
         except (ValueError, FileNotFoundError, RuntimeError) as e:
             self.logger.error(f'Failed to create query service "{name}": {e}')

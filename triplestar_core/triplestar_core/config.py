@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 from pydantic import Field
+from pydantic import validator
 
 
 class KBConfig(BaseModel):
@@ -33,6 +34,17 @@ class SubscribersConfig(BaseModel):
     )
     query_time_tf_subscribers: dict[str, QueryTimeTFSubscriberConfig] = Field(default_factory=dict)
 
+    @validator(
+        'insertion_subscribers',
+        'query_time_topic_subscribers',
+        'query_time_tf_subscribers',
+        pre=True,
+    )
+    @classmethod
+    def _none_to_empty_dict(cls, value):
+        """Treat an empty YAML key (parsed as None) the same as an omitted one."""
+        return value if value is not None else {}
+
     @property
     def is_empty(self) -> bool:
         return not (
@@ -44,7 +56,6 @@ class SubscribersConfig(BaseModel):
 
 class QueryServiceConfig(BaseModel):
     query_file: str
-    reasoning: bool = False
 
 
 class QueryServicesConfig(BaseModel):

@@ -38,6 +38,7 @@ setup(
         'triplestar.query.verb': [
             'list = triplestar_cli.query.list:ListVerb',
             'call = triplestar_cli.query.call:CallVerb',
+            'info = triplestar_cli.query.info:InfoVerb',
         ],
         'triplestar.bringup.verb': [
             'new = triplestar_cli.bringup.new:NewVerb',

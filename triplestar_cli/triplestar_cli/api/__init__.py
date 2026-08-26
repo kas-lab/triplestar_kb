@@ -59,6 +59,7 @@ def call_triplestar_query(
     name: str,
     substitutions: list[str] | None = None,
     query: str | None = None,
+    reasoning: bool | None = None,
     timeout: float = 10.0,
 ):
     """Call a TripleStar query service and return its response."""
@@ -80,6 +81,12 @@ def call_triplestar_query(
                 raise RuntimeError(f"Query service '{name}' does not accept a SPARQL query")
 
             request.query = query
+
+        if reasoning is not None:
+            if not hasattr(request, 'reasoning'):
+                raise RuntimeError(f"Query service '{name}' does not support reasoning")
+
+            request.reasoning = reasoning
 
         if substitutions is not None:
             if not hasattr(request, 'substitutions'):

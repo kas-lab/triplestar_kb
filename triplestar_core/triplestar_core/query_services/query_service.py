@@ -44,7 +44,7 @@ class FileQueryService:
         node: Node | LifecycleNode,
         name: str,
         query_file: Path,
-        query_fn: Callable[[str, dict[str, str]], str | bool | None],
+        query_fn: Callable[[str, bool, dict[str, str]], str | bool | None],
     ):
         self.logger = node.get_logger().get_child(name)
 
@@ -80,7 +80,7 @@ class FileQueryService:
         span = trace.get_current_span()
         span.set_attribute('query_name', self.name)
         substitutions: dict[str, str] = {b.variable: b.rdf_term for b in request.substitutions}
-        return self.query_fn(self.query_file.read_text(), substitutions)
+        return self.query_fn(self.query_file.read_text(), request.reasoning, substitutions)
 
     def _handle_select(self, request: SelectQuery.Request, response: SelectQuery.Response):
         try:

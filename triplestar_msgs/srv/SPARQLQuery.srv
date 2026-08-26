@@ -1,4 +1,5 @@
 string query # SPARQL query to execute
+bool reasoning
 ---
 bool success
 string error_message

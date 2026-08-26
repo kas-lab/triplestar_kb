@@ -32,6 +32,13 @@ class CallVerb(VerbExtension):
         )
 
         parser.add_argument(
+            '--reasoning',
+            '-r',
+            action='store_true',
+            help='Execute the query with reasoning enabled',
+        )
+
+        parser.add_argument(
             'substitutions',
             nargs='*',
             help='Query substitutions in VAR=TERM format',
@@ -42,6 +49,7 @@ class CallVerb(VerbExtension):
             name=args.query_name,
             query=args.query,
             substitutions=args.substitutions,
+            reasoning=True if args.reasoning else None,
             timeout=args.timeout,
         )
 
