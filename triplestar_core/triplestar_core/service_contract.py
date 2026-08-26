@@ -7,7 +7,7 @@ Single source of truth for service names/types — imported by both
 the node(s) that advertise these services and the CLI that calls them.
 """
 
-QUERY_SERVICE_PREFIX = '/triplestar/query/'
+QUERY_SERVICE_PREFIX = '/triplestar/query'
 SPARQL_SERVICE_NAME = '/triplestar/sparql'
 
 SELECT_SRV_TYPE = 'triplestar_msgs/srv/SelectQuery'
