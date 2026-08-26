@@ -7,9 +7,13 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+
+# Register this package as a discoverable triplestar bringup package.
+# CONTENT lets you stash the relative launch file path so the CLI
+# doesn't have to guess a filename convention.
+ament_index_register_resource("triplestar_bringup"
+  CONTENT "launch/bringup.launch.xml"
+)
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})

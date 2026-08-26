@@ -3,9 +3,5 @@
   "__prompts__": {
     "bringup_name": "What is the name of your custom TriplestarKB bringup package?"
   },
-  "_copy_without_render": [
-    "*.sparql",
-    "*.ttl",
-    "templates/*"
-  ]
+  "_copy_without_render": ["*.sparql", "*.ttl", "templates/*"]
 }

@@ -45,6 +45,8 @@ setup(
         ],
         'triplestar.bringup.verb': [
             'new = triplestar_cli.bringup.new:NewVerb',
+            'launch = triplestar_cli.bringup.launch:LaunchVerb',
+            'list = triplestar_cli.bringup.list:ListVerb',
         ],
     },
 )
