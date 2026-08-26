@@ -36,6 +36,7 @@ setup(
             'bringup = triplestar_cli.verb.bringup:BringupVerb',
             'start = triplestar_cli.verb.lifecycle:StartVerb',
             'stop = triplestar_cli.verb.lifecycle:StopVerb',
+            'status = triplestar_cli.verb.status:StatusVerb',
         ],
         'triplestar.query.verb': [
             'list = triplestar_cli.query.list:ListVerb',
