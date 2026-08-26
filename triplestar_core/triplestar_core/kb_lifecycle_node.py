@@ -89,11 +89,12 @@ class TriplestarKBNode(LifecycleNode):
         without touching the preloaded data.
         """
         self.get_logger().info('Activating KB node...')
-        assert self.subscriber_manager is not None and self.query_service_manager is not None
 
         try:
-            self.subscriber_manager.start()
-            self.query_service_manager.start()
+            if self.subscriber_manager is not None:
+                self.subscriber_manager.start()
+            if self.query_service_manager is not None:
+                self.query_service_manager.start()
         except _CONFIG_ERRORS as e:
             self.get_logger().error(f'Activation failed: {e}')
             return TransitionCallbackReturn.FAILURE
@@ -104,7 +105,7 @@ class TriplestarKBNode(LifecycleNode):
         result = super().on_activate(state)
 
         if result == TransitionCallbackReturn.SUCCESS:
-            self.get_logger().info('KB node activated and ready to serve')
+            self.get_logger().warn('KB node activated and ready to serve')
         else:
             self.get_logger().error('Failed to activate KB node')
 
@@ -123,7 +124,7 @@ class TriplestarKBNode(LifecycleNode):
         result = super().on_deactivate(state)
 
         if result == TransitionCallbackReturn.SUCCESS:
-            self.get_logger().info('KB node deactivated')
+            self.get_logger().warn('KB node deactivated')
         else:
             self.get_logger().error('Failed to deactivate KB node')
 
