@@ -13,7 +13,7 @@ from triplestar_core.config import KBConfig
 from triplestar_core.config import QueryServicesConfig
 from triplestar_core.config import SubscribersConfig
 from triplestar_core.functions import registry
-from triplestar_core.knowledge_base import TriplestarKnowledgeBase
+from triplestar_core.knowledge_base import KnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
 
@@ -23,13 +23,13 @@ from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
 _CONFIG_ERRORS = (FileNotFoundError, KeyError, ValueError, RuntimeError, TypeError)
 
 
-class TriplestarKBNode(LifecycleNode):
+class TriplestarCoreNode(LifecycleNode):
     """A ROS2 lifecycle node for managing a triplestar knowledge base using pyoxigraph."""
 
     def __init__(self):
         super().__init__('triplestar_core')
 
-        self.kb: TriplestarKnowledgeBase | None = None
+        self.kb: KnowledgeBase | None = None
         self.subscriber_manager: SubscriptionManager | None = None
         self.query_service_manager: QueryServiceManager | None = None
         self.query_service = None
@@ -177,7 +177,7 @@ class TriplestarKBNode(LifecycleNode):
     def _init_knowledge_base(self):
         assert self.config is not None, 'No config loaded'
 
-        self.kb = TriplestarKnowledgeBase(
+        self.kb = KnowledgeBase(
             store_path=self.config.store_path,
             logger=self.get_logger(),
             base_iri=self.config.base_iri,

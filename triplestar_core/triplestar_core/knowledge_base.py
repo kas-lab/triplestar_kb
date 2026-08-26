@@ -24,7 +24,7 @@ from triplestar_core.conversions import string_to_oxi_term
 TRACER = trace.get_tracer('triplestar_bench')
 
 
-class TriplestarKnowledgeBase:
+class KnowledgeBase:
     def __init__(
         self,
         store_path: Path | None,
@@ -32,7 +32,7 @@ class TriplestarKnowledgeBase:
         logger=None,
     ):
 
-        self.logger = logger.get_child('KBInterface') if logger else logging.getLogger(__name__)
+        self.logger = logger.get_child('kb') if logger else logging.getLogger(__name__)
 
         self.store_path = store_path
         self.store: Store = Store(store_path)

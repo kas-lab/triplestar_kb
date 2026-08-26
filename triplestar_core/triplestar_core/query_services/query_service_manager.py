@@ -7,7 +7,7 @@ from rclpy.lifecycle import LifecycleNode
 
 from triplestar_core.config import QueryServiceConfig
 from triplestar_core.config import QueryServicesConfig
-from triplestar_core.knowledge_base import TriplestarKnowledgeBase
+from triplestar_core.knowledge_base import KnowledgeBase
 from triplestar_core.query_services.query_service import FileQueryService
 from triplestar_msgs.srv import SPARQLQuery
 
@@ -28,7 +28,7 @@ class QueryServiceManager:
         self,
         node: LifecycleNode,
         config: QueryServicesConfig,
-        kb: TriplestarKnowledgeBase,
+        kb: KnowledgeBase,
         queries_dir: Path,
     ):
         self.logger = node.get_logger().get_child('query_service_manager')
@@ -80,7 +80,7 @@ class QueryServiceManager:
     def _create_file_query_service(
         self,
         node: LifecycleNode,
-        kb: TriplestarKnowledgeBase,
+        kb: KnowledgeBase,
         queries_dir: Path,
         name: str,
         srv_config: QueryServiceConfig,

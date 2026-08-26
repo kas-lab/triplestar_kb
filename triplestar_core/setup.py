@@ -31,9 +31,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'triplestar_kb_node = triplestar_core.kb_node:main',
-            'kb_marker_publisher = triplestar_core.kb_marker_publisher:main',
-            'query_kb = scripts.query_kb:main',
+            'triplestar_kb_node = triplestar_core.main:main',
         ],
     },
 )

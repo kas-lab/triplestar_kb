@@ -20,7 +20,7 @@ from triplestar_core.config import QueryTimeTFSubscriberConfig
 from triplestar_core.config import QueryTimeTopicSubscriberConfig
 from triplestar_core.config import SubscribersConfig
 from triplestar_core.conversions import to_rdf_literal
-from triplestar_core.knowledge_base import TriplestarKnowledgeBase
+from triplestar_core.knowledge_base import KnowledgeBase
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TopicLatestSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TransformLatestSubscriber
@@ -54,14 +54,14 @@ class SubscriptionManager:
         self,
         node: Node | LifecycleNode,
         config: SubscribersConfig,
-        kb: TriplestarKnowledgeBase,
+        kb: KnowledgeBase,
         templates_dir: Path,
     ):
         self.node = node
         self.config = config
         self.kb = kb
         self.templates_dir = templates_dir
-        self.logger = node.get_logger().get_child('subscriber_manager')
+        self.logger = node.get_logger().get_child('subscribers')
 
         self.subscriber_cb_group = ReentrantCallbackGroup()
 
@@ -149,6 +149,7 @@ class SubscriptionManager:
             try:
                 self.topic_query_subs[name] = TopicLatestSubscriber(
                     node=self.node,
+                    logger=self.logger,
                     topic=sub.topic,
                     msg_type=msg_type,
                     msg_field_name=sub.msg_field_name,
@@ -172,6 +173,7 @@ class SubscriptionManager:
             try:
                 self.tf_query_subs[name] = TransformLatestSubscriber(
                     node=self.node,
+                    logger=self.logger,
                     from_frame=sub.from_frame,
                     to_frame=sub.to_frame,
                     buffer=self._buffer,

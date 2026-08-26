@@ -10,10 +10,16 @@ import tf2_ros
 
 
 class BaseLatestSubscriber:
-    def __init__(self, node: Node | LifecycleNode, max_age_sec: float = 2.0) -> None:
+    def __init__(
+        self,
+        node: Node | LifecycleNode,
+        logger,
+        name: str,
+        max_age_sec: float = 2.0,
+    ) -> None:
         self._node = node
         self._max_age_sec = max_age_sec
-        self._logger = node.get_logger().get_child(self.__class__.__name__)
+        self._logger = logger.get_child(name)
 
     def get_latest(self, *args, **kwargs) -> Any | None:
         raise NotImplementedError('get_latest must be implemented by subclasses')
@@ -23,13 +29,14 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
     def __init__(
         self,
         node: Node | LifecycleNode,
+        logger,
         topic: str,
         msg_type,
         callback_group,
         max_age_sec: float = 2.0,
         msg_field_name: str | None = None,
     ):
-        super().__init__(node, max_age_sec)
+        super().__init__(node, logger, topic.strip('/').replace('/', '.'), max_age_sec)
         self._topic = topic
         self._msg_field_name = msg_field_name
         self._latest_msg = None
@@ -76,13 +83,14 @@ class TransformLatestSubscriber(BaseLatestSubscriber):
     def __init__(
         self,
         node: Node | LifecycleNode,
+        logger,
         from_frame: str,
         to_frame: str,
         buffer: tf2_ros.Buffer,
         listener: tf2_ros.TransformListener,
         max_age_sec: float = 2.0,
     ):
-        super().__init__(node, max_age_sec)
+        super().__init__(node, logger, f'{from_frame}_to_{to_frame}', max_age_sec)
         self._from_frame = from_frame
         self._to_frame = to_frame
         self._buffer = buffer

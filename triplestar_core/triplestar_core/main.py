@@ -1,10 +1,10 @@
 import rclpy
 
-from triplestar_core.kb_lifecycle_node import TriplestarKBNode
+from triplestar_core.core_lifecycle_node import TriplestarCoreNode
 
 
 def run(args=None):
-    node = TriplestarKBNode()
+    node = TriplestarCoreNode()
     executor = rclpy.executors.SingleThreadedExecutor()
     executor.add_node(node)
 
