@@ -9,12 +9,12 @@ console = Console()
 
 
 class CallVerb(VerbExtension):
-    """Call a TripleStar query service and print the result as JSON."""
+    """Call a TriplestarKB query service and print the result as JSON."""
 
     def add_arguments(self, parser, cli_name):
         arg = parser.add_argument(
             'query_name',
-            help='Name of the TripleStar query to call',
+            help='Name of the query to call',
         )
         arg.completer = QueryNameCompleter()
 

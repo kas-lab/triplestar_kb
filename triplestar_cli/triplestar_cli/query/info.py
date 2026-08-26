@@ -9,12 +9,12 @@ from triplestar_cli.api import get_triplestar_query_info
 
 
 class InfoVerb(VerbExtension):
-    """Show information about a TripleStar query."""
+    """Show information about a TriplestarKB query."""
 
     def add_arguments(self, parser, cli_name):
         arg = parser.add_argument(
             'name',
-            help='Name of the TripleStar query',
+            help='Name of the query',
         )
         arg.completer = QueryNameCompleter()
 

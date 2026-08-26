@@ -3,7 +3,7 @@ from ros2cli.command import add_subparsers_on_demand
 
 
 class TriplestarCommand(CommandExtension):
-    """Various triplestar knowledge base related sub-commands."""
+    """Various TriplestarKB related sub-commands."""
 
     def add_arguments(self, parser, cli_name, *, argv=None):
         self._subparser = parser

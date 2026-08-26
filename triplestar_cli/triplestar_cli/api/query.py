@@ -11,7 +11,7 @@ from triplestar_msgs.srv import QueryInfo
 
 
 def get_triplestar_query_names() -> list[str]:
-    """Return the names of all available TripleStar queries."""
+    """Return the names of all available TripletarKB queries."""
     with NodeStrategy({}) as node:
         return [
             service_name.removeprefix(f'{QUERY_SERVICE_PREFIX}/')
@@ -22,7 +22,7 @@ def get_triplestar_query_names() -> list[str]:
 
 
 def get_triplestar_queries() -> list[dict[str, str]]:
-    """Return all available TripleStar queries and their service types."""
+    """Return all available TriplestarKB queries and their service types."""
     with NodeStrategy({}) as node:
         return [
             {
@@ -36,7 +36,7 @@ def get_triplestar_queries() -> list[dict[str, str]]:
 
 
 def get_triplestar_query_info(name: str) -> QueryInfo.Response:
-    """Return detailed information about a TripleStar query."""
+    """Return detailed information about a TriplestarKB query."""
     service_name = f'{QUERY_SERVICE_PREFIX}/{name}/info'
 
     with NodeStrategy({}) as node:
@@ -62,7 +62,7 @@ def call_triplestar_query(
     reasoning: bool | None = None,
     timeout: float = 10.0,
 ):
-    """Call a TripleStar query service and return its response."""
+    """Call a TriplestarKB query service and return its response."""
     service_name = f'{QUERY_SERVICE_PREFIX}/{name}'
 
     with NodeStrategy({}) as node:
