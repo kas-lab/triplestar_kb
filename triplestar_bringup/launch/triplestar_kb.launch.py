@@ -24,7 +24,7 @@ def generate_launch_description():
 
     triplestar_core_node = LifecycleNode(
         package='triplestar_core',
-        executable='kb_node',
+        executable='triplestar_kb_node',
         name='triplestar_core',
         namespace='',
         output='screen',
