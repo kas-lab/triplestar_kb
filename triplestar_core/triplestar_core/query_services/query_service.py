@@ -57,8 +57,8 @@ class FileQueryService:
         self.name = name
         self.query_type = _detect_query_type(query_file)
 
-        srv_name = QUERY_SERVICE_PREFIX + name
-        info_srv_name = QUERY_SERVICE_PREFIX + name + '/info'
+        srv_name = f'{QUERY_SERVICE_PREFIX}/{name}'
+        info_srv_name = f'{QUERY_SERVICE_PREFIX}/{name}/info'
 
         match self.query_type:
             case 'SELECT':
