@@ -53,6 +53,8 @@ class TriplestarKnowledgeBase:
             '': self.base_iri,
         }
 
+        self.reasoner = reasonable.PyReasoner()  # type:ignore
+
     def _add_function(self, name: str, function: Callable, prefix: str):
         uri = NamedNode(f'{self.extra_iris[prefix]}{name}')
         self.fn_registry[uri] = function
@@ -83,27 +85,35 @@ class TriplestarKnowledgeBase:
     def run_reasoning(self):
         self.logger.info('Running reasoning...')
 
-        reasoner = reasonable.PyReasoner()  # type:ignore
-
         # filter out RDF* triples (reasoner does not support RDF*)
         def is_plain_triple(t):
             return isinstance(t, tuple) and not any(isinstance(term, tuple) for term in t)
 
-        triples = [
-            from_ox(q.triple)
-            for q in self.store.quads_for_pattern(None, None, None, DefaultGraph())
-            if is_plain_triple(from_ox(q.triple))
-        ]
+        with TRACER.start_as_current_span('fetch_base_triples') as span:
+            triples = []
+            for q in self.store.quads_for_pattern(None, None, None, DefaultGraph()):
+                t = from_ox(q.triple)
+                if is_plain_triple(t):
+                    triples.append(t)
+            base_set = set(triples)
+            span.set_attribute('triples_count', len(triples))
 
-        reasoner.update_graph(triples)
-        inferred_quads = [
-            Quad(to_ox(s), to_ox(p), to_ox(o), self.reasoned_graph)  # type: ignore
-            for s, p, o in reasoner.reason()
-        ]
+        with TRACER.start_as_current_span('update_reasoner_graph'):
+            self.reasoner.update_graph(triples)
 
-        # refresh reasoned graph
-        self.store.clear_graph(self.reasoned_graph)
-        self.store.bulk_extend(inferred_quads)
+        with TRACER.start_as_current_span('reason'):
+            reasoned = self.reasoner.reason()
+
+        with TRACER.start_as_current_span('filter_inferred_triples'):
+            inferred_quads = [
+                Quad(to_ox(s), to_ox(p), to_ox(o), self.reasoned_graph)  # type: ignore
+                for s, p, o in reasoned
+                if (s, p, o) not in base_set
+            ]
+
+        with TRACER.start_as_current_span('refresh_reasoned_graph'):
+            self.store.clear_graph(self.reasoned_graph)
+            self.store.bulk_extend(inferred_quads)
 
     def load_files(self, file_paths: list[Path], file_format: RdfFormat = RdfFormat.TURTLE) -> int:
         loaded = 0
