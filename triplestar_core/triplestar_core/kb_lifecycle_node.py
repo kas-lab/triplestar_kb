@@ -16,8 +16,11 @@ from triplestar_core.functions import registry
 from triplestar_core.knowledge_base import TriplestarKnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
-from triplestar_core.tracing.tracer_factory import get_tracer
-from triplestar_msgs.srv import SPARQLQuery
+
+# Exceptions we treat as "expected, fixable" configuration problems.
+# Returning FAILURE for these keeps the node alive and retryable instead
+# of falling through on_error's default -> Finalized.
+_CONFIG_ERRORS = (FileNotFoundError, KeyError, ValueError, RuntimeError, TypeError)
 
 
 class TriplestarKBNode(LifecycleNode):
@@ -29,6 +32,9 @@ class TriplestarKBNode(LifecycleNode):
         self.kb: TriplestarKnowledgeBase | None = None
         self.subscriber_manager: SubscriptionManager | None = None
         self.query_service_manager: QueryServiceManager | None = None
+        self.query_service = None
+        self.share_dir: Path | None = None
+        self.config: KBConfig | None = None
 
         self.declare_parameter('bringup_package', 'triplestar_bringup')
         # allow setting this parameter to override with a single file to preload
@@ -37,121 +43,63 @@ class TriplestarKBNode(LifecycleNode):
 
         self.get_logger().info('Triplestar KB node created')
 
+    # ------------------------------------------------------------------
+    # Lifecycle callbacks
+    # ------------------------------------------------------------------
+
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        """
+        One-time, heavy setup: load config, init the store, clear + preload.
+
+        Deliberately does NOT create live subscriptions or start the query
+        service - that belongs to on_activate/on_deactivate so it can be
+        redone cheaply (e.g. a subscribed topic disappears and comes back)
+        without re-clearing or re-preloading the whole store.
+        """
         self.get_logger().info('Configuring KB node...')
 
-        bringup_package: str = self.get_parameter('bringup_package').value
-
-        if not bringup_package:
-            self.get_logger().error(
-                'No bringup package specified. Please create a custom TriplestarKB '
-                'bringup package and run from there (instructions in the README)'
-            )
-            return TransitionCallbackReturn.ERROR
-
         try:
-            share_dir = Path(get_package_share_directory(bringup_package))
-        except (FileNotFoundError, KeyError, ValueError) as e:
-            self.get_logger().error(
-                f'Could not find package share directory for "{bringup_package}": {e}'
-            )
+            self.share_dir = self._resolve_bringup_share_dir()
+            self.config = self._load_kb_config(self.share_dir / 'config' / 'kb_params.yaml')
+
+            self._init_knowledge_base()
+            self._clear_and_preload(self.share_dir)
+
+            self._build_subscription_manager(self.share_dir)
+            self._build_query_service_manager(self.share_dir)
+            self._load_kb_functions_into_kb(self.share_dir)
+
+        except _CONFIG_ERRORS as e:
+            self.get_logger().error(f'Configuration failed: {e}')
+            return TransitionCallbackReturn.FAILURE
+        except Exception:  # noqa: BLE001 follow best practices and log the exception
+            self.get_logger().error(f'Unexpected error during configure:\n{traceback.format_exc()}')
             return TransitionCallbackReturn.ERROR
-
-        self.share_dir = share_dir  # cache it
-
-        self.get_logger().info(f'Using config package: {bringup_package} ({share_dir})')
-
-        try:
-            # --- CONFIG LOAD ---
-            self.config = self._load_kb_config(share_dir / 'config' / 'kb_params.yaml')
-
-            # --- KB INIT ---
-            self.kb = TriplestarKnowledgeBase(
-                store_path=self.config.store_path,
-                logger=self.get_logger(),
-                base_iri=self.config.base_iri,
-            )
-
-            self.get_logger().info(f'Using store path: {self.kb.store_path}')
-
-            # --- CLEAR ON STARTUP ---
-            if self.config.clear_on_startup:
-                self.kb.clear()
-                self.get_logger().info('Cleared store on startup')
-
-            # --- PRELOAD ---
-            preload_dir = share_dir / 'preload'
-            override_preload_file = self.get_parameter('override_preload_file').value
-            preload_files = (
-                [override_preload_file] if override_preload_file else self.config.preload_files
-            )
-            if override_preload_file:
-                self.get_logger().warn(f'Overriding preload file: {override_preload_file}')
-
-            self._preload_files(preload_dir, preload_files)
-
-            # --- SUBSCRIBERS ---
-            subscriber_config = self._load_subscribers_config(
-                share_dir / 'config' / 'subscribers.yaml'
-            )
-            if subscriber_config is not None:
-                self.subscriber_manager = SubscriptionManager(
-                    self,
-                    config=subscriber_config,
-                    kb=self.kb,
-                    templates_dir=share_dir / 'templates',
-                )
-
-            # --- QUERY SERVICES ---
-            query_config = self._load_query_service_config(
-                share_dir / 'config' / 'query_services.yaml'
-            )
-            if query_config is not None:
-                self.query_service_manager = QueryServiceManager(
-                    self,
-                    config=query_config,
-                    kb=self.kb,
-                    queries_dir=share_dir / 'queries',
-                )
-
-            # --- KB FUNCTIONS ---
-            self._load_kb_functions(share_dir / 'functions')
-
-            for name, func in registry:
-                self.kb.add_kb_function(name, func)
-
-        except (FileNotFoundError, KeyError, ValueError, RuntimeError, TypeError) as e:
-            self.get_logger().error(f'Configuration failed: {e}\n{traceback.format_exc()}')
-            return TransitionCallbackReturn.ERROR
-
-        # --- TRACING ---
-        self.tracer = get_tracer()
 
         self.get_logger().info('KB node configured successfully')
         return TransitionCallbackReturn.SUCCESS
 
-    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        """Clean up resources."""
-        self.get_logger().info('Cleaning up KB node...')
-
-        if self.kb:
-            self.kb.optimize()
-            self.kb = None
-
-        self.subscriber_manager = None
-        self.query_service_manager = None
-
-        self.get_logger().info('KB node cleaned up')
-        return TransitionCallbackReturn.SUCCESS
-
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        """Activate the KB node for serving."""
-        self.get_logger().info('Activating KB node...')
+        """
+        Bring the node fully online: subscribe to topics, serve queries.
 
-        self.query_service = self.create_service(
-            SPARQLQuery, '/triplestar/sparql', self.query_callback
-        )
-        self.get_logger().info('SPARQL query service ready at /triplestar/sparql')
+        This is the retryable half of startup. If a subscribed topic isn't
+        up yet, introspection/subscription creation fails here (not in
+        configure), so a supervisor can just call activate again later
+        without touching the preloaded data.
+        """
+        self.get_logger().info('Activating KB node...')
+        assert self.subscriber_manager is not None and self.query_service_manager is not None
+
+        try:
+            self.subscriber_manager.start()
+            self.query_service_manager.start()
+        except _CONFIG_ERRORS as e:
+            self.get_logger().error(f'Activation failed: {e}')
+            return TransitionCallbackReturn.FAILURE
+        except Exception:  # noqa: BLE001
+            self.get_logger().error(f'Unexpected error during activate:\n{traceback.format_exc()}')
+            return TransitionCallbackReturn.ERROR
 
         result = super().on_activate(state)
 
@@ -163,11 +111,14 @@ class TriplestarKBNode(LifecycleNode):
         return result
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        """Deactivate the KB node but keep data in memory."""
+        """Tear down subscriptions + query service, but keep data in memory."""
         self.get_logger().info('Deactivating KB node...')
 
-        self.get_logger().info('Removing SPARQL query service')
-        self.query_service = None
+        if self.subscriber_manager is not None:
+            self.subscriber_manager.stop()  # destroys subscriptions, stops ingestion
+
+        if self.query_service_manager is not None:
+            self.query_service_manager.stop()
 
         result = super().on_deactivate(state)
 
@@ -178,10 +129,78 @@ class TriplestarKBNode(LifecycleNode):
 
         return result
 
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        """Release everything on_configure set up."""
+        self.get_logger().info('Cleaning up KB node...')
+
+        if self.kb:
+            self.kb.optimize()
+            self.kb = None
+
+        self.subscriber_manager = None
+        self.query_service_manager = None
+        self.config = None
+        self.share_dir = None
+
+        self.get_logger().info('KB node cleaned up')
+        return TransitionCallbackReturn.SUCCESS
+
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         """Shut down and clean up the node."""
         self.get_logger().info('Shutting down KB node...')
         return TransitionCallbackReturn.SUCCESS
+
+    # ------------------------------------------------------------------
+    # on_configure helpers
+    # ------------------------------------------------------------------
+
+    def _resolve_bringup_share_dir(self) -> Path:
+        bringup_package: str = self.get_parameter('bringup_package').value
+
+        if not bringup_package:
+            raise ValueError(
+                'No bringup package specified. Please create a custom TriplestarKB '
+                'bringup package and run from there (instructions in the README)'
+            )
+
+        try:
+            share_dir = Path(get_package_share_directory(bringup_package))
+        except (FileNotFoundError, KeyError, ValueError) as e:
+            raise FileNotFoundError(
+                f'Could not find package share directory for "{bringup_package}": {e}'
+            ) from e
+
+        self.get_logger().info(f'Using config package: {bringup_package} ({share_dir})')
+        return share_dir
+
+    def _init_knowledge_base(self):
+        assert self.config is not None, 'No config loaded'
+
+        self.kb = TriplestarKnowledgeBase(
+            store_path=self.config.store_path,
+            logger=self.get_logger(),
+            base_iri=self.config.base_iri,
+        )
+        self.get_logger().info(f'Using store path: {self.kb.store_path}')
+
+    def _clear_and_preload(self, share_dir: Path):
+        assert self.config is not None and self.kb is not None, (
+            'No config loaded or KB not initialized'
+        )
+
+        if self.config.clear_on_startup:
+            self.kb.clear()
+            self.get_logger().info('Cleared store on startup')
+
+        preload_dir = share_dir / 'preload'
+        override_preload_file = self.get_parameter('override_preload_file').value
+        preload_files = (
+            [override_preload_file] if override_preload_file else self.config.preload_files
+        )
+        if override_preload_file:
+            self.get_logger().warn(f'Overriding preload file: {override_preload_file}')
+
+        self._preload_files(preload_dir, preload_files)
 
     def _preload_files(self, preload_dir: Path, preload_files: list[str]):
         """Preload TTL files from the given preload directory."""
@@ -212,24 +231,56 @@ class TriplestarKBNode(LifecycleNode):
         self.get_logger().info(f'Successfully preloaded {loaded} files from {preload_dir}')
         self.get_logger().info(f'Amount of triples in the KB: {self.kb.count_triples()}')
 
-        return True
+    def _build_subscription_manager(self, share_dir: Path):
+        """
+        Construct the manager, but don't subscribe to anything yet.
 
-    def query_callback(
-        self, request: SPARQLQuery.Request, response: SPARQLQuery.Response
-    ) -> SPARQLQuery.Response:
-        """Handle a SPARQL query request."""
-        self.get_logger().debug(f'Received query request: {request}')
-
+        Actual topic introspection + subscription happens in on_activate,
+        via subscriber_manager.start().
+        """
         if self.kb is None:
-            self.get_logger().error('KB interface not initialized')
-            response.success = False
-            response.result = ''
-            return response
+            raise RuntimeError('KB not initialized')
 
-        response.result = self.kb.query(request.query)
-        response.success = response.result != ''
+        subscriber_config = self._load_subscribers_config(share_dir / 'config' / 'subscribers.yaml')
+        self.subscriber_manager = (
+            SubscriptionManager(
+                self,
+                config=subscriber_config,
+                kb=self.kb,
+                templates_dir=share_dir / 'templates',
+            )
+            if subscriber_config is not None
+            else None
+        )
 
-        return response
+    def _build_query_service_manager(self, share_dir: Path):
+        """
+        Build the query service manager from the query services configuration.
+
+        Only start subscribing when start() is called
+        """
+        assert self.kb is not None
+        query_config = self._load_query_service_config(share_dir / 'config' / 'query_services.yaml')
+        self.query_service_manager = (
+            QueryServiceManager(
+                self,
+                config=query_config,
+                kb=self.kb,
+                queries_dir=share_dir / 'queries',
+            )
+            if query_config is not None
+            else None
+        )
+
+    def _load_kb_functions_into_kb(self, share_dir: Path):
+        assert self.kb is not None
+        self._load_kb_functions(share_dir / 'functions')
+        for name, func in registry:
+            self.kb.add_kb_function(name, func)
+
+    # ------------------------------------------------------------------
+    # Config file loading
+    # ------------------------------------------------------------------
 
     def _load_yaml(self, path: Path) -> dict:
         try:
@@ -239,15 +290,12 @@ class TriplestarKBNode(LifecycleNode):
 
         if data is None:
             return {}
-
         if not isinstance(data, dict):
             raise TypeError(f'Expected dict in YAML: {path}')
-
         return data
 
     def _load_kb_config(self, path: Path) -> KBConfig:
-        data = self._load_yaml(path)
-        return KBConfig.parse_obj(data)
+        return KBConfig.parse_obj(self._load_yaml(path))
 
     def _load_subscribers_config(self, path: Path) -> SubscribersConfig | None:
         if not path.is_file():
@@ -256,9 +304,7 @@ class TriplestarKBNode(LifecycleNode):
             )
             return None
 
-        data = self._load_yaml(path)
-
-        config = SubscribersConfig.parse_obj(data)
+        config = SubscribersConfig.parse_obj(self._load_yaml(path))
 
         if config.is_empty:
             self.get_logger().warn(
@@ -275,9 +321,7 @@ class TriplestarKBNode(LifecycleNode):
             )
             return None
 
-        data = self._load_yaml(path)
-
-        config = QueryServicesConfig.parse_obj(data)
+        config = QueryServicesConfig.parse_obj(self._load_yaml(path))
 
         if config.is_empty:
             self.get_logger().warn(

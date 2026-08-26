@@ -49,6 +49,9 @@ class TopicLatestSubscriber(BaseLatestSubscriber):
         )
         self._logger.info(f'Subscribed to {self._topic}')
 
+    def destroy(self) -> None:
+        self._node.destroy_subscription(self._subscription)
+
     def _callback(self, msg):
         self._latest_msg = msg
         self._latest_time = (

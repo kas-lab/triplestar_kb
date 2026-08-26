@@ -41,6 +41,15 @@ def make_query_fn(sub):
 
 
 class SubscriptionManager:
+    """
+    Owns all runtime subscriptions (query-time topic/TF + insertion).
+
+    Construct once in on_configure (cheap - just stores config/refs).
+    start()/stop() from on_activate/on_deactivate do the actual topic
+    introspection and subscription creation/teardown, so it can be safely
+    redone if a subscribed topic isn't up yet.
+    """
+
     def __init__(
         self,
         node: Node | LifecycleNode,
@@ -49,46 +58,69 @@ class SubscriptionManager:
         templates_dir: Path,
     ):
         self.node = node
+        self.config = config
+        self.kb = kb
+        self.templates_dir = templates_dir
         self.logger = node.get_logger().get_child('subscriber_manager')
 
         self.subscriber_cb_group = ReentrantCallbackGroup()
 
-        self._buffer = tf2_ros.Buffer()
-        self._listener = tf2_ros.TransformListener(self._buffer, node)
-
+        # Populated by start(), torn down by stop().
+        self._buffer: tf2_ros.Buffer | None = None
+        self._listener: tf2_ros.TransformListener | None = None
         self.topic_query_subs: dict[str, TopicLatestSubscriber] = {}
         self.tf_query_subs: dict[str, TransformLatestSubscriber] = {}
         self.insertion_subs: dict[str, InsertionSubscriber] = {}
 
+    def start(self):
+        self._buffer = tf2_ros.Buffer()
+        self._listener = tf2_ros.TransformListener(self._buffer, self.node)
+
         env = Environment(
-            loader=FileSystemLoader(templates_dir),
+            loader=FileSystemLoader(self.templates_dir),
             autoescape=False,
             undefined=StrictUndefined,
         )
         env.filters['rdf'] = _rdf_filter
         env.filters['serialize'] = _serialize_filter
 
-        self._load_topic_query_subs(
-            config.query_time_topic_subscribers,
-        )
-        self._load_tf_query_subs(config.query_time_tf_subscribers)
+        self._load_topic_query_subs(self.config.query_time_topic_subscribers)
+        self._load_tf_query_subs(self.config.query_time_tf_subscribers)
         self._load_insertion_subs(
-            config.insertion_subscribers,
+            self.config.insertion_subscribers,
             env,
-            lambda sparql: kb.update(sparql),
+            lambda sparql: self.kb.update(sparql),
         )
 
         # Register query-time subscribers as custom SPARQL functions
         all_query_subs = {**self.topic_query_subs, **self.tf_query_subs}
-
         for name, sub in all_query_subs.items():
-            kb.add_query_time_function(name, make_query_fn(sub))
+            self.kb.add_query_time_function(name, make_query_fn(sub))
 
         self.logger.info(
-            f'SubscriberManager initialized — '
-            f'query-time: {list(all_query_subs.keys())}, '
+            f'Started — query-time: {list(all_query_subs.keys())}, '
             f'insertion: {list(self.insertion_subs.keys())}'
         )
+
+    def stop(self):
+        # Unregister SPARQL functions before tearing down what backs them.
+        for name in {**self.topic_query_subs, **self.tf_query_subs}:
+            self.kb.remove_query_time_function(name)
+
+        for sub in self.insertion_subs.values():
+            sub.destroy()
+        self.insertion_subs.clear()
+
+        for sub in self.topic_query_subs.values():
+            sub.destroy()
+        self.topic_query_subs.clear()
+
+        if self._listener is not None:
+            self._listener.unregister()
+        self._buffer = None
+        self._listener = None
+
+        self.logger.info('Stopped')
 
     def try_msg_class(self, topic: str, timeout_sec: float = 2.0) -> type | None:
         start = time.time()
@@ -105,7 +137,6 @@ class SubscriptionManager:
             time.sleep(0.2)
 
         msg_type = get_msg_class(self.node, topic, include_hidden_topics=True)
-
         return msg_type if msg_type else None
 
     def _load_topic_query_subs(self, config: dict[str, QueryTimeTopicSubscriberConfig]) -> None:
@@ -130,6 +161,13 @@ class SubscriptionManager:
         self,
         config: dict[str, QueryTimeTFSubscriberConfig],
     ) -> None:
+        assert self._buffer is not None, (
+            'buffer must be initialized before loading TF query subscribers'
+        )
+        assert self._listener is not None, (
+            'listener must be initialized before loading TF query subscribers'
+        )
+
         for name, sub in config.items():
             try:
                 self.tf_query_subs[name] = TransformLatestSubscriber(

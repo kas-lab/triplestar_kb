@@ -59,11 +59,25 @@ class TriplestarKnowledgeBase:
         params = ', '.join(signature(function).parameters.keys())
         self.logger.info(f'Registered {uri}, call in SPARQL via {prefix}:{name}({params})')
 
+    def _remove_function(self, name: str, prefix: str):
+        uri = NamedNode(f'{self.extra_iris[prefix]}{name}')
+        if uri in self.fn_registry:
+            del self.fn_registry[uri]
+            self.logger.info(f'Removed function: {uri}')
+        else:
+            self.logger.warning(f'No function found: {uri}')
+
     def add_kb_function(self, name: str, function: Callable):
         self._add_function(name, function, 'fn')
 
+    def remove_kb_function(self, name: str):
+        self._remove_function(name, 'fn')
+
     def add_query_time_function(self, name: str, function: Callable):
         self._add_function(name, function, 'qt')
+
+    def remove_query_time_function(self, name: str):
+        self._remove_function(name, 'qt')
 
     @TRACER.start_as_current_span('run_reasoning')
     def run_reasoning(self):

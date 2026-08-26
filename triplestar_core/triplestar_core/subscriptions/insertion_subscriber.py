@@ -44,3 +44,6 @@ class InsertionSubscriber:
                 self._update_fn(query)
         except Exception as e:  # noqa: BLE001
             self._logger.error(f'Insertion failed for {self._topic}: {e}')
+
+    def destroy(self) -> None:
+        self._node.destroy_subscription(self._sub)
