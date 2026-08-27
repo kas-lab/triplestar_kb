@@ -14,7 +14,6 @@
   <depend>triplestar_core</depend>
   <depend>ament_index_python</depend>
   <depend>python3-cookiecutter</depend>
-  <depend>python3-tabulate</depend>
   <depend>python3-rich</depend>
 
   <test_depend>ament_copyright</test_depend>
