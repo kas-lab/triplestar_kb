@@ -1,111 +1,75 @@
----
-icon: lucide/eye
----
-
 # Visualization
 
-The `triplestar_viz` package provides two visualization tools.
+The `triplestar_viz` package contains a standalone Graphviz renderer, a ROS image publisher for a persistent Oxigraph store, and an RViz geometry publisher.
 
-## Graph visualization (RDF\* with Graphviz)
+## Standalone graph rendering
 
-Visualize the knowledge graph as rendered diagrams using [Graphviz](https://graphviz.org/). Supports RDF\* quoted triples.
-
-### CLI
+The `rdfstar_viz` executable reads an RDF file or an Oxigraph store and writes an image:
 
 ```bash
-# Visualize a Turtle file
-ros2 run triplestar_viz rdfstar-viz data.ttl -o output.svg
+# Render all triples from a Turtle file
+ros2 run triplestar_viz rdfstar_viz data.ttl -o graph.svg
 
-# Apply a SPARQL CONSTRUCT query first
-ros2 run triplestar_viz rdfstar-viz kb.ttl --query rooms.rq -o rooms.png
+# Render the result of a SPARQL CONSTRUCT query
+ros2 run triplestar_viz rdfstar_viz data.ttl \
+  --query rooms.sparql -o rooms.png
 
-# Load from an Oxigraph store
-ros2 run triplestar_viz rdfstar-viz --store /tmp/kb_store -o graph.pdf
+# Open an existing store read-only
+ros2 run triplestar_viz rdfstar_viz \
+  --store /var/lib/triplestar/store -o graph.pdf
 ```
 
-### Layout engines
+The output extension selects PNG, SVG, PDF, or JPEG. Available Graphviz engines are `dot`, `neato`, `fdp`, `sfdp`, `circo`, and `twopi`; `sfdp` is the default. Graphviz executables must be installed and available on `PATH`.
 
-| Engine | Use case |
-|---|---|
-| `sfdp` (default) | Large undirected graphs |
-| `dot` | Hierarchical / directed layouts |
-| `neato` | Spring model |
-| `fdp` | Force-directed |
-| `circo` | Circular layouts |
+The renderer distinguishes named nodes, literals, blank nodes, and RDF-star triple terms. It shortens known namespaces and can include a prefix legend.
 
-```bash
-ros2 run triplestar_viz rdfstar-viz data.ttl -o output.svg --engine neato
-```
+### Python use
 
-### Node styling
-
-- **URIs**: Blue ellipses
-- **Literals**: Green rounded boxes
-- **Blank nodes**: Gray diamonds
-- **Quoted triples**: Dashed gray lines
-
-### Python API
+The same implementation is available without a ROS node:
 
 ```python
 from triplestar_viz.core import RDFLoader, RDFStarVisualizer
 
-store = RDFLoader.from_file("kb.ttl")
-viz = RDFStarVisualizer(format="SVG", engine="sfdp")
-svg_data = viz.generate_visualization(store=store)
+store = RDFLoader.from_file("data.ttl")
+visualizer = RDFStarVisualizer(format="SVG", engine="dot")
+svg = visualizer.generate_visualization(store=store)
 ```
 
-### ROS 2 node
+## ROS graph image publisher
+
+Run `kb_visualizer_node` with the same persistent store path configured by the bringup package:
 
 ```bash
 ros2 run triplestar_viz kb_visualizer_node \
-  --ros-args -p store_path:=/tmp/kb_store
+  --ros-args -p store_path:=/var/lib/triplestar/store
 ```
 
-Publishes the visualization to `~/graph_visualization/image` and provides a `~/set_viz_query` service to change the SPARQL CONSTRUCT query at runtime.
+The node opens that store read-only. It starts publishing after a `SetVizQuery` request configures an update interval:
 
----
-
-## Geometry visualizer (RViz markers)
-
-The geometry visualizer periodically queries the KB for WKT geometries and publishes them as [visualization_msgs/MarkerArray](https://docs.ros2.org/latest/api/visualization_msgs/msg/MarkerArray.html) to the `/kb_markers` topic.
-
-### How it works
-
-The visualizer runs a SPARQL query that looks for entities with `geo:hasGeometry/geo:asWKT` properties:
-
-```sparql
-PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-SELECT ?entity ?wkt ?label
-WHERE {
-    ?entity geo:hasGeometry/geo:asWKT ?wkt .
-    OPTIONAL { ?entity rdfs:label ?label . }
-}
+```bash
+ros2 service call /set_viz_query triplestar_msgs/srv/SetVizQuery \
+  "{query: '', update_rate: 1.0}"
 ```
 
-Supported geometry types:
+An empty query renders the whole store. A non-empty query should be a SPARQL `CONSTRUCT`. With the default node name and namespace, images are published as `sensor_msgs/Image` on `/kb_visualizer/graph_visualization/image`.
 
-| WKT type | RViz marker type |
-|---|---|
+## RViz geometry markers
+
+The generated bringup launch file can enable `kb_geometry_visualizer`:
+
+```bash
+ros2 triplestar bringup launch my_bringup enable-geometry-viz:=true
+```
+
+The node calls `/triplestar/sparql` once per second for resources connected through `geo:hasGeometry/geo:asWKT`. It publishes a `visualization_msgs/MarkerArray` on `/kb_markers` in the `map` frame.
+
+| WKT geometry | RViz marker |
+| --- | --- |
 | `Polygon` | `LINE_STRIP` |
 | `LineString` | `LINE_STRIP` |
 | `Point` | `SPHERE` |
 
-Each entity gets a deterministic color derived from its URI hash, and labels are rendered as `TEXT_VIEW_FACING` markers.
+Optional `rdfs:label` values become text markers. In RViz, add a `MarkerArray` display for `/kb_markers` and ensure the fixed frame can resolve `map`.
 
-### Enabling the visualizer
-
-Pass `enable-geometry-viz:=true` to your bringup launch file:
-
-```bash
-ros2 launch my_robot_kb my_robot_kb_triplestar.launch.xml enable-geometry-viz:=true
-```
-
-Or set the argument directly when using `triplestar_bringup`:
-
-```bash
-ros2 launch triplestar_bringup triplestar_kb.launch.py enable-geometry-visualizer:=true
-```
-
-Then in RViz, add a `MarkerArray` display subscribed to `/kb_markers`.
+!!! note
+    The geometry node depends on the general SPARQL service, so keep at least one file-backed query configured and the core lifecycle node active.

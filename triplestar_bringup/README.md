@@ -1,78 +1,17 @@
-# TriplestarKB Bringup Package
+# TriplestarKB bringup support
 
-This is the reference bringup package for TriplestarKB. It also bundles the
-template used to generate new bringup packages.
+This package provides the shared TriplestarKB launch file, lifecycle launch helpers, and the template used by the CLI to generate application bringup packages.
 
-## Generate a New Bringup Package
-
-Rather than copying this package by hand, generate a fresh bringup package from
-the bundled template using the Triplestar CLI:
-
-```bash
-ros2 triplestar bringup new
-```
-
-You will be prompted for the package name. To skip the prompt, pass it with
-`--name`:
+Generate a package after building and sourcing the workspace:
 
 ```bash
 ros2 triplestar bringup new --name my_bringup
 ```
 
-This renders the `bringup_template/` directory into a new package in your
-workspace's `src/` folder (pass `--output-dir` to write somewhere else). The
-generated package follows the folder structure described below.
+Do not copy `triplestar_bringup` as an application configuration. The generated package registers itself with the ament index and includes the expected config, preload, query, template, function, and launch directories.
 
-## Folder Structure
+See the canonical documentation for:
 
-TriplestarKB assumes your custom config package to follow the directory structure of this package, so yaml config files in the config folder, so dont change the folder names.
-
-## Config Files
-
-There are three config files: `kb_params.yaml`, `query_services.yaml` and `subscribers.yaml`.
-
-### `kb_params.yaml`
-
-This config file contains the path where `oxigraph` will store data, which files to preload into the KB and what the name of the config package is.
-
-Specifying the name of your custom config package will allow the KB to access the share directory of that package, and find your custom preload, query and template files.
-
-The `base_iri` field is used to provide a default IRI to resolve relative IRIs to in sparql updates and queries.
-So, with a base IRI of "http://triplestar.local", `:robotA` will resolve to `http://triplestar.local/robotA`.
-
-Custom functions are available as prefix `fn`. So `fn:myCustomFunction` --> `http://triplestar.local/functions/myCustomFunction`.
-
-[Query time subscribers functions](../README.md#query-time-subscribers) are available with the `qt` prefix.
-So `qt:robotPosition` --> `http://triplestar.local/query-time/robotPosition`
-
-### `query_services.yaml`
-
-This file is used to spin up query services using the files in your `queries` folder.
-
-### `subscribers.yaml`
-
-This file is used for configuring the topics the KB subscribes to to pull in data.
-The KB pulls in data using [query time subscribers](../README.md#query-time-subscribers) [query time tf subscribers](../README.md#query-time-tf-subscribers) and [insertion subscribers].
-
-## Queries
-
-Put [SPARQL](https://www.w3.org/TR/sparql12-query/) queries in this folder.
-Those queries can then be used to setup query services using the `query_services.yaml` config file.
-
-## Preload
-
-Put ttl files with information you want preloaded into the knowledge base here.
-
-**WARNING**: if you are using triple annotations (The new feature in RDF 1.2), make sure to use [explicit reifiers](https://www.w3.org/TR/rdf12-turtle/#ex-reified-triple-with-reifier). If this is not done the KB will create new blank nodes for the reifier on each startup, causing unwanted duplication of information.
-
-## Templates
-
-Put your [SPARQL](https://www.w3.org/TR/sparql12-query/) insertion templates in this folder.
-You can use [jinja2](https://jinja.palletsprojects.com/en/stable/) syntax (so fields are surrounded by double curly braces).
-Converting `ROS` message values to `RDF` values can be done using the `rdf` filter function.
-
-For instance, the following will convert a ROS pose to a point (see [datatype conversions](../README.md#ros-to-rdf-conversions)).
-
-```jinja2
-{{ msg.pose | rdf }}
-```
+- [Bringup package structure](https://kas-lab.github.io/triplestar_kb/bringup/)
+- [Configuration fields](https://kas-lab.github.io/triplestar_kb/bringup/configuration/)
+- [Custom SPARQL functions](https://kas-lab.github.io/triplestar_kb/bringup/custom-functions/)
