@@ -2,7 +2,7 @@
 
 TriplestarKB is a ROS 2 enabled knowledge base backed by [Oxigraph](https://github.com/oxigraph/oxigraph), a high-performance SPARQL graph database.
 
-📖 **Full documentation**: [https://kas-lab.github.io/triplestar_kb](https://kas-lab.github.io/triplestar_kb)
+<!-- 📖 **Full documentation**: [https://kas-lab.github.io/triplestar_kb](https://kas-lab.github.io/triplestar_kb) -->
 
 ## Quick Start
 
@@ -50,9 +50,10 @@ colcon build --symlink-install --merge-install --cmake-args -DCMAKE_EXPORT_COMPI
 
 After sourcing the workspace, run triplestar with your custom config using:
 ```bash
-ros2 launch {your_custom_bringup_name} {your_custom_bringup_name}_triplestar.launch.xml
+ros2 triplestar bringup launch {your_custom_brigup_name}
 ```
 
+> :info: As seen in the above snippets, the `triplestar` cli provides convenient commands for common operations.
 
 ## ROS to RDF conversions
 
