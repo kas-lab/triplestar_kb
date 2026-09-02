@@ -43,19 +43,24 @@ Copyright &copy; 2026 The authors
 # can be defined using TOML syntax.
 #
 # Read more: https://zensical.org/docs/setup/navigation/
-# nav = [
-#   { "Home" = "index.md" },
-#   { "Getting started" = "getting-started.md" },
-#   { "Bringup package" = [
-#     { "Package structure" = "bringup/package.md" },
-#     { "Config files" = "bringup/config-files.md" },
-#     { "Custom functions" = "bringup/functions.md" },
-#   ] },
-#   { "Concepts" = [
-#     { "ROS → RDF conversion" = "concepts/ros-to-rdf.md" },
-#   ] },
-#   { "Visualization" = "visualization.md" },
-# ]
+nav = [
+  { "Home" = "index.md" },
+  { "Getting started" = [
+    { "Install and run" = "getting-started.md" },
+    { "Command-line interface" = "cli.md" },
+  ] },
+  { "Bringup packages" = [
+    { "Package structure" = "bringup_package/package.md" },
+    { "Configuration reference" = "bringup_package/config-files.md" },
+    { "Custom SPARQL functions" = "bringup_package/functions.md" },
+  ] },
+  { "Concepts" = [
+    { "Insertion templates" = "concepts/insertion-templates.md" },
+    { "ROS to RDF conversion" = "concepts/ros-to-rdf.md" },
+    { "Learn RDF and SPARQL" = "concepts/learning-sparql.md" },
+  ] },
+  { "Visualization" = "visualization.md" },
+]
 
 # With the "extra_css" option you can add your own CSS styling to customize
 # your Zensical project according to your needs. You can add any number of

@@ -35,6 +35,9 @@ In robotics, knowledge is more than sensor readings — it's understanding rooms
 ## Next steps
 
 - **[Getting started](getting-started.md)** — set up your workspace and run the KB
+- **[Command-line interface](cli.md)** — create, launch, inspect, and query a KB
+- **[Insertion templates](concepts/insertion-templates.md)** — turn ROS messages into RDF
+- **[Learn RDF and SPARQL](concepts/learning-sparql.md)** — tutorials and standards references
 - **[Bringup package structure](bringup_package/package.md)** — understand how to configure the KB for your scenario
 - **[Config files reference](bringup_package/config-files.md)** — all configuration options explained
 - **[Custom SPARQL functions](bringup_package/functions.md)** — extend the KB with Python functions

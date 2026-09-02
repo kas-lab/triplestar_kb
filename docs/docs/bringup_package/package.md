@@ -57,12 +57,11 @@ The generated launch file wraps the shared `triplestar_kb.launch.py` and sets th
 
 ## Creating a bringup package
 
-Use the [cookiecutter](https://github.com/cookiecutter/cookiecutter) template:
+Use the Triplestar CLI, which renders the bundled Cookiecutter template into
+the active workspace's `src/` directory:
 
 ```bash
-pip install cookiecutter
-cd ~/ros2_ws/src
-cookiecutter triplestar_kb/bringup_template
+ros2 triplestar bringup new --name my_bringup
 ```
 
 This scaffolds the full directory structure with example files you can customize.
