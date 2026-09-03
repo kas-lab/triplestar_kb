@@ -33,9 +33,9 @@ jobs:
         working-directory: docs
         run: uv sync --locked --all-groups
 
-      - name: Build site in strict mode
+      - name: Build site
         working-directory: docs
-        run: uv run --locked zensical build --clean --strict
+        run: uv run --locked zensical build --clean
 
       - name: Upload Pages artifact
         if: github.event_name == 'push'

@@ -1,27 +1,5 @@
-# TriplestarKB Bringup Package
-
-This is the reference bringup package for TriplestarKB. It also bundles the
-template used to generate new bringup packages.
-
-## Generate a New Bringup Package
-
-Rather than copying this package by hand, generate a fresh bringup package from
-the bundled template using the Triplestar CLI:
-
-```bash
-ros2 triplestar bringup new
-```
-
-You will be prompted for the package name. To skip the prompt, pass it with
-`--name`:
-
-```bash
-ros2 triplestar bringup new --name my_bringup
-```
-
-This renders the `bringup_template/` directory into a new package in your
-workspace's `src/` folder (pass `--output-dir` to write somewhere else). The
-generated package follows the folder structure described below.
+Each TriplestarKB instance uses a custom bringup package for its configuration.
+Generate one with `ros2 triplestar bringup new` rather than copying a package by hand.
 
 ## Folder Structure
 
@@ -42,7 +20,7 @@ So, with a base IRI of "http://triplestar.local", `:robotA` will resolve to `htt
 
 Custom functions are available as prefix `fn`. So `fn:myCustomFunction` --> `http://triplestar.local/functions/myCustomFunction`.
 
-[Query time subscribers functions](../README.md#query-time-subscribers) are available with the `qt` prefix.
+Query time subscribers functions are available with the `qt` prefix.
 So `qt:robotPosition` --> `http://triplestar.local/query-time/robotPosition`
 
 ### `query_services.yaml`
@@ -52,7 +30,7 @@ This file is used to spin up query services using the files in your `queries` fo
 ### `subscribers.yaml`
 
 This file is used for configuring the topics the KB subscribes to to pull in data.
-The KB pulls in data using [query time subscribers](../README.md#query-time-subscribers) [query time tf subscribers](../README.md#query-time-tf-subscribers) and [insertion subscribers].
+The KB pulls in data using query time subscribers, query time tf subscribers and insertion subscribers.
 
 ## Queries
 
@@ -71,7 +49,7 @@ Put your [SPARQL](https://www.w3.org/TR/sparql12-query/) insertion templates in 
 You can use [jinja2](https://jinja.palletsprojects.com/en/stable/) syntax (so fields are surrounded by double curly braces).
 Converting `ROS` message values to `RDF` values can be done using the `rdf` filter function.
 
-For instance, the following will convert a ROS pose to a point (see [datatype conversions](../README.md#ros-to-rdf-conversions)).
+For instance, the following will convert a ROS pose to a point.
 
 ```jinja2
 {{ msg.pose | rdf }}

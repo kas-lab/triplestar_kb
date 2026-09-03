@@ -1,54 +1,108 @@
 # TriplestarKB
 
-TriplestarKB is a ROS 2 knowledge base backed by [Oxigraph](https://github.com/oxigraph/oxigraph). It loads RDF data, integrates selected ROS topics and transforms, and exposes SPARQL queries through ROS 2 services.
+TriplestarKB is a ROS 2 enabled knowledge base backed by [Oxigraph](https://github.com/oxigraph/oxigraph), a high-performance SPARQL graph database.
 
-**Documentation:** <https://kas-lab.github.io/triplestar_kb/>
+<!-- 📖 **Full documentation**: [https://kas-lab.github.io/triplestar_kb](https://kas-lab.github.io/triplestar_kb) -->
 
-## Packages
+## Quick Start
 
-- `triplestar_core`: lifecycle-managed knowledge base runtime
-- `triplestar_bringup`: shared launch support and bringup-package template
-- `triplestar_cli`: `ros2 triplestar` commands
-- `triplestar_msgs`: ROS interfaces
-- `triplestar_viz`: Graphviz and RViz visualization
+### Repo and dependencies
 
-## Start here
-
-Clone the repository into a ROS 2 workspace, install package dependencies with `rosdep`, and build:
-
+First, clone the current repo into the `src` folder of your ROS2 workspace.
 ```bash
-cd ~/triplestar_ws/src
-git clone https://github.com/kas-lab/triplestar_kb.git
+cd src
+git clone https://github.com/kas-lab/triplestar_kb.git 
 cd ..
-rosdep install --from-paths src/triplestar_kb --ignore-src -r -y
-colcon build --symlink-install --packages-up-to triplestar_cli triplestar_viz
-source install/setup.bash
 ```
 
-TriplestarKB runs from an application-specific bringup package:
+Secondly, install the needed dependencies via rosdep:
+```bash
+rosdep install -i --from-path src/triplestar_kb -r -y
+```
 
+### Generate your own bringup package
+
+*TriplestarKB* is configured on a per-scenario basis using _bringup packages_. 
+To generate a new bringup package, run the following from your sourced workspace:
+```bash
+ros2 triplestar bringup new
+```
+You will be prompted for the package name. To skip the prompt, pass it with
+`--name`:
 ```bash
 ros2 triplestar bringup new --name my_bringup
-colcon build --symlink-install --packages-select my_bringup
-source install/setup.bash
-ros2 triplestar bringup launch my_bringup
 ```
 
-See [Getting started](https://kas-lab.github.io/triplestar_kb/getting-started/) for configuration, verification, and troubleshooting.
+The generated package is placed in the `src/` folder of the active colcon
+workspace automatically. To write somewhere other than the workspace `src/`,
+pass `--output-dir`:
+```bash
+ros2 triplestar bringup new --name my_bringup --output-dir /path/to/dir
+```
+
+### Build the package
+
+```bash
+colcon build --symlink-install --merge-install --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select {your_custom_bringup_name}
+```
+
+### Running
+
+After sourcing the workspace, run triplestar with your custom config using:
+```bash
+ros2 triplestar bringup launch {your_custom_brigup_name}
+```
+
+> :info: As seen in the above snippets, the `triplestar` cli provides convenient commands for common operations.
+
+## ROS to RDF conversions
+
+ROS(2) defines its own set of interfaces (messages and services) for representing data like timestamps, points, integers, floats, polygons etc.
+To facilitate the integration of these datatypes into the kb, which is based on RDF, these types need to be converted to suitable RDF types.
+
+| ROS msg type                                                                           | Python / Shapely type      | RDF literal type |
+| -------------------------------------------------------------------------------------- | -------------------------- | ---------------- |
+| `geometry_msgs/Point`, `Point32`, `PointStamped`                                       | `shapely.geometry.Point`   | `geo:wktLiteral` |
+| `geometry_msgs/Pose`                                                                   | `shapely.geometry.Point`   | `geo:wktLiteral` |
+| `geometry_msgs/Vector3`, `Vector3Stamped`                                              | `shapely.geometry.Point`   | `geo:wktLiteral` |
+| `geometry_msgs/Polygon`, `PolygonStamped`, `PolygonInstance`, `PolygonInstanceStamped` | `shapely.geometry.Polygon` | `geo:wktLiteral` |
+| `builtin_interfaces/Time`                                                              | `datetime.datetime`        | `xsd:dateTime`   |
+| `std_msgs/Float32`, `Float64`                                                          | `float`                    | `xsd:float`      |
+| `std_msgs/Int8`, `Int16`, `Int32`, `Int64`                                             | `int`                      | `xsd:integer`    |
+| `std_msgs/UInt8`, `UInt16`, `UInt32`, `UInt64`                                         | `int`                      | `xsd:integer`    |
+| `std_msgs/Char`, `Byte`                                                                | `int`                      | `xsd:integer`    |
+| `std_msgs/Bool`                                                                        | `bool`                     | `xsd:boolean`    |
+| `std_msgs/String`                                                                      | `str`                      | `xsd:string`     |
+
+## Query-time subscribers
+
+Some data, such as room geometries or class hirarchies, will be quite static in your KB, while other data, such as the robots own location or battery level, will change frequently.
+For this requently-chaning information it is possible to add _query_time_subscribers_ to the kb node, which keep track of the messages published on a certain topic and expose them to oxigraph's underlying SPARQL evaluator to be run at query time.
+As an example:
+
+```sparql
+PREFIX ex: <http://example.org/>
+SELECT ?bl WHERE {
+  BIND(ex:robotBatteryLevel() AS ?bl) .
+  FILTER(?bl > 0.2)
+}
+```
+
+This query contains the special function `robotBatteryLevel`, which accesses the latest message on a certain topic at query time.
+These query time subscribers can be added by modifying the config file.
+
+## Query-time TF subscribers
+
+ROS(2) makes use of the `tf2` library to publish transforms between coordinate frames
 
 ## Contributing
 
-Install [pre-commit](https://pre-commit.com/) and enable the repository hooks:
+Contributions are welcome. Please install [pre-commit](https://pre-commit.com/)
+and enable the hooks once:
 
-```bash
-pip install pre-commit
-pre-commit install
-```
+    pip install pre-commit
+    pre-commit install
 
-Documentation contributors should use the locked uv workflow in [`docs/README.md`](docs/README.md).
-
-## Acknowledgement
-
-TriplestarKB uses Oxigraph:
+This runs ruff (lint + format) automatically on every commit.
 
 - _Pellissier Tanon, T._ (n.d.). **Oxigraph**. [![DOI:10.5281/zenodo.7408022](https://zenodo.org/badge/DOI/10.5281/zenodo.7408022.svg)](https://doi.org/10.5281/zenodo.7408022)
