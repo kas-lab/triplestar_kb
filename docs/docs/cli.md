@@ -73,10 +73,10 @@ ros2 triplestar bringup list
 
 ## Launch a bringup package
 
-Arguments after the package name are forwarded to its launch file:
+Launch a custom bringup package:
 
 ```bash
-ros2 triplestar bringup launch my_robot_kb enable-geometry-viz:=true
+ros2 triplestar bringup launch my_robot_kb
 ```
 
 The launch command occupies the terminal until the launch is stopped. Use a

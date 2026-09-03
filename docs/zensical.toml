@@ -59,7 +59,6 @@ nav = [
     { "ROS to RDF conversion" = "concepts/ros-to-rdf.md" },
     { "Learn RDF and SPARQL" = "concepts/learning-sparql.md" },
   ] },
-  { "Visualization" = "visualization.md" },
 ]
 
 # With the "extra_css" option you can add your own CSS styling to customize
