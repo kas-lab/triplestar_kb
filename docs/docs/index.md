@@ -19,7 +19,6 @@ In robotics, knowledge is more than sensor readings — it's understanding rooms
 - **TF integration** — look up the latest transform between frames as a SPARQL function (`qt:robotPose()`)
 - **Custom SPARQL functions** — register Python functions as `fn:` extension functions callable from SPARQL
 - **Query services** — expose SPARQL queries as typed ROS 2 services (SELECT → JSON, ASK → bool)
-- **Visualization** — visualize RDF\* graphs with [Graphviz](https://graphviz.org/) and publish geometry to RViz via the `triplestar_viz` package
 - **ROS 2 lifecycle** — the KB node follows the lifecycle pattern (configure → activate → deactivate), with persistent storage to disk
 - **Reasoning** — OWL 2 RL reasoning via the [reasonable](https://github.com/gtfierro/reasonable) library
 
@@ -28,14 +27,15 @@ In robotics, knowledge is more than sensor readings — it's understanding rooms
 | Package | Role |
 |---|---|
 | `triplestar_core` | The core KB node, SPARQL engine, ROS ↔ RDF conversions, subscriber management, query services, and custom functions |
-| `triplestar_bringup` | Reference bringup package with example configs, queries, templates, and preload data |
+| `triplestar_bringup` | Shared launch file and template for custom bringup packages |
 | `triplestar_msgs` | ROS 2 message and service definitions for interacting with the KB |
-| `triplestar_viz` | RDF\*/WKT geometry visualization (Graphviz CLI, RViz markers) |
 
 ## Next steps
 
 - **[Getting started](getting-started.md)** — set up your workspace and run the KB
+- **[Command-line interface](cli.md)** — create, launch, inspect, and query a KB
+- **[Insertion templates](concepts/insertion-templates.md)** — turn ROS messages into RDF
+- **[Learn RDF and SPARQL](concepts/learning-sparql.md)** — tutorials and standards references
 - **[Bringup package structure](bringup_package/package.md)** — understand how to configure the KB for your scenario
 - **[Config files reference](bringup_package/config-files.md)** — all configuration options explained
 - **[Custom SPARQL functions](bringup_package/functions.md)** — extend the KB with Python functions
-- **[Visualization](visualization.md)** — visualize your knowledge graph

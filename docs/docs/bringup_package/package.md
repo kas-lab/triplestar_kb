@@ -26,7 +26,7 @@ my_bringup/
 
 ## How it works
 
-The KB's launch file (`triplestar_kb.launch.py`) takes a `bringup-package` argument (default: `triplestar_bringup`). At configure time, the `TriplestarKBNode` lifecycle node:
+The shared KB launch file (`triplestar_kb.launch.py`) takes the custom package name as its `bringup-package` argument. At configure time, the `TriplestarKBNode` lifecycle node:
 
 1. Resolves the bringup package's share directory via `ament_index_python.get_package_share_directory()`
 2. Loads `config/kb_params.yaml` → [`KBConfig`][kbconfig-ref]
@@ -46,23 +46,19 @@ The generated launch file wraps the shared `triplestar_kb.launch.py` and sets th
 
 ```xml
 <launch>
-  <arg name="enable-geometry-viz" default="false" />
-
   <include file="$(find-pkg-share triplestar_bringup)/launch/triplestar_kb.launch.py">
-      <arg name="bringup-package" value="my_bringup" />
-      <arg name="enable-geometry-visualizer" value="$(var enable-geometry-viz)" />
+    <arg name="bringup-package" value="my_bringup" />
   </include>
 </launch>
 ```
 
 ## Creating a bringup package
 
-Use the [cookiecutter](https://github.com/cookiecutter/cookiecutter) template:
+Use the Triplestar CLI, which renders the bundled Cookiecutter template into
+the active workspace's `src/` directory:
 
 ```bash
-pip install cookiecutter
-cd ~/ros2_ws/src
-cookiecutter triplestar_kb/bringup_template
+ros2 triplestar bringup new --name my_bringup
 ```
 
 This scaffolds the full directory structure with example files you can customize.

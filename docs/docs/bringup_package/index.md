@@ -1,5 +1,5 @@
-This is an example bringup package for TriplestarKB.
-For your own workspace, copy this package into your src folder and create a custom configuration.
+Each TriplestarKB instance uses a custom bringup package for its configuration.
+Generate one with `ros2 triplestar bringup new` rather than copying a package by hand.
 
 ## Folder Structure
 
