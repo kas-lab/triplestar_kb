@@ -1,10 +1,13 @@
 import rclpy
+from rclpy.executors import SingleThreadedExecutor
 from triplestar_core.core_lifecycle_node import TriplestarCoreNode
 
 
 def run(args=None):
     node = TriplestarCoreNode()
-    executor = rclpy.executors.SingleThreadedExecutor()
+    # Mirrored service callbacks await ROS client futures cooperatively, so their
+    # responses and timeout timers progress without concurrent KB access.
+    executor = SingleThreadedExecutor()
     executor.add_node(node)
 
     try:

@@ -12,6 +12,13 @@ def _config_data() -> dict:
             'base_iri': 'http://triplestar.local',
         },
         'insertion_subscribers': [{'topic': '/detections', 'template': 'detections.sparql.tmpl'}],
+        'insertion_services': [
+            {
+                'service': '/robot/set_enabled',
+                'template': 'set-enabled.sparql.tmpl',
+                'timeout_sec': 1.5,
+            }
+        ],
         'query_time_topic_subscribers': [
             {
                 'topic': '/clock',
@@ -37,6 +44,8 @@ def test_unified_config_parses_lists():
 
     assert config.knowledge_base.store_path == Path('/tmp/triplestar_kb')
     assert config.insertion_subscribers[0].topic == '/detections'
+    assert config.insertion_services[0].service == '/robot/set_enabled'
+    assert config.insertion_services[0].timeout_sec == 1.5
     assert config.query_time_topic_subscribers[0].sparql_fn_name == 'rosTime'
     assert config.query_time_tf_subscribers[0].sparql_fn_name == 'robotPose'
     assert config.query_services[0].service_name == 'count_triples'
@@ -53,6 +62,7 @@ def test_optional_sections_default_to_empty_lists():
     )
 
     assert config.insertion_subscribers == []
+    assert config.insertion_services == []
     assert config.query_time_topic_subscribers == []
     assert config.query_time_tf_subscribers == []
     assert config.query_services == []
@@ -88,4 +98,36 @@ def test_query_service_names_must_be_unique():
     )
 
     with pytest.raises(ValidationError, match='Query service names must be unique'):
+        TriplestarConfig.parse_obj(data)
+
+
+def test_insertion_service_names_must_be_unique():
+    data = _config_data()
+    data['insertion_services'].append(
+        {
+            'service': '/robot/set_enabled',
+            'template': 'another.sparql.tmpl',
+        }
+    )
+
+    with pytest.raises(ValidationError, match='Insertion service names must be unique'):
+        TriplestarConfig.parse_obj(data)
+
+
+@pytest.mark.parametrize(
+    ('field', 'value', 'message'),
+    [
+        ('timeout_sec', 0, 'greater than 0'),
+        ('service', '/', 'must name a ROS service'),
+        ('service', '  ', 'must not be blank'),
+        ('service', 'bad service', 'invalid ROS service name'),
+        ('template', '', 'must not be blank'),
+        ('service_type', 'std_srvs/srv/SetBool', 'extra fields not permitted'),
+    ],
+)
+def test_insertion_service_fields_are_validated(field, value, message):
+    data = _config_data()
+    data['insertion_services'][0][field] = value
+
+    with pytest.raises(ValidationError, match=message):
         TriplestarConfig.parse_obj(data)

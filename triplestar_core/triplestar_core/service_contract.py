@@ -8,6 +8,14 @@ the node(s) that advertise these services and the CLI that calls them.
 """
 
 QUERY_SERVICE_PREFIX = '/triplestar/query'
+INSERTION_SERVICE_PREFIX = '/triplestar/ingest'
+
+
+def insertion_mirror_name(target_service: str) -> str:
+    """Return the Triplestar mirror name for a target ROS service."""
+    return f'{INSERTION_SERVICE_PREFIX}/{target_service.lstrip("/")}'
+
+
 SPARQL_SERVICE_NAME = '/triplestar/sparql'
 
 SELECT_SRV_TYPE = 'triplestar_msgs/srv/SelectQuery'

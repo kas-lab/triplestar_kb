@@ -9,6 +9,7 @@ from rclpy.lifecycle import LifecycleState
 from rclpy.lifecycle import TransitionCallbackReturn
 from triplestar_core.config import TriplestarConfig
 from triplestar_core.functions import registry
+from triplestar_core.insertion_services.insertion_service_manager import InsertionServiceManager
 from triplestar_core.knowledge_base import KnowledgeBase
 from triplestar_core.query_services.query_service_manager import QueryServiceManager
 from triplestar_core.subscriptions.subscriber_manager import SubscriptionManager
@@ -29,6 +30,7 @@ class TriplestarCoreNode(LifecycleNode):
         self.kb: KnowledgeBase | None = None
         self.subscriber_manager: SubscriptionManager | None = None
         self.query_service_manager: QueryServiceManager | None = None
+        self.insertion_service_manager: InsertionServiceManager | None = None
         self.query_service = None
         self.share_dir: Path | None = None
         self.config: TriplestarConfig | None = None
@@ -63,6 +65,7 @@ class TriplestarCoreNode(LifecycleNode):
             self._clear_and_preload(self.share_dir)
 
             self._build_subscription_manager(self.share_dir)
+            self._build_insertion_service_manager(self.share_dir)
             self._build_query_service_manager(self.share_dir)
             self._load_kb_functions_into_kb(self.share_dir)
 
@@ -91,6 +94,8 @@ class TriplestarCoreNode(LifecycleNode):
         try:
             if self.subscriber_manager is not None:
                 self.subscriber_manager.start()
+            if self.insertion_service_manager is not None:
+                self.insertion_service_manager.start()
             if self.query_service_manager is not None:
                 self.query_service_manager.start()
         except _CONFIG_ERRORS as e:
@@ -116,6 +121,9 @@ class TriplestarCoreNode(LifecycleNode):
         if self.subscriber_manager is not None:
             self.subscriber_manager.stop()  # destroys subscriptions, stops ingestion
 
+        if self.insertion_service_manager is not None:
+            self.insertion_service_manager.stop()
+
         if self.query_service_manager is not None:
             self.query_service_manager.stop()
 
@@ -137,6 +145,7 @@ class TriplestarCoreNode(LifecycleNode):
             self.kb = None
 
         self.subscriber_manager = None
+        self.insertion_service_manager = None
         self.query_service_manager = None
         self.config = None
         self.share_dir = None
@@ -262,6 +271,19 @@ class TriplestarCoreNode(LifecycleNode):
             config=self.config,
             kb=self.kb,
             queries_dir=share_dir / 'queries',
+        )
+
+    def _build_insertion_service_manager(self, share_dir: Path):
+        """Build the manager that discovers and mirrors insertion services."""
+        if self.kb is None:
+            raise RuntimeError('KB not initialized')
+
+        assert self.config is not None
+        self.insertion_service_manager = InsertionServiceManager(
+            self,
+            config=self.config,
+            kb=self.kb,
+            templates_dir=share_dir / 'templates',
         )
 
     def _load_kb_functions_into_kb(self, share_dir: Path):

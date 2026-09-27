@@ -15,6 +15,7 @@ In robotics, knowledge is more than sensor readings — it's understanding rooms
 - **SPARQL query engine** — full [SPARQL 1.2](https://www.w3.org/TR/sparql12-query/) support via Oxigraph, with SELECT, ASK, UPDATE, CONSTRUCT, and reasoning
 - **Automatic ROS → RDF conversion** — ROS messages (`geometry_msgs/Point32`, `std_msgs/Float32`, …) are seamlessly converted to typed RDF literals (WKT geometry, XSD types)
 - **Insertion subscribers** — subscribe to ROS topics and translate incoming messages into SPARQL INSERT queries via [Jinja2](https://jinja.palletsprojects.com/) templates
+- **Insertion services** - mirror dynamically typed ROS services and translate successful responses into SPARQL updates
 - **Query-time subscribers** — expose the latest value on a ROS topic as a SPARQL function (`qt:batteryLevel()`) callable directly from queries
 - **TF integration** - look up fresh frame positions directly from SPARQL (`qt:tfPosition(?frame, "map")`)
 - **Custom SPARQL functions** — register Python functions as `fn:` extension functions callable from SPARQL

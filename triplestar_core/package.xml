@@ -13,6 +13,7 @@
   <depend>std_msgs</depend>
   <depend>builtin_interfaces</depend>
   <depend>ros2topic</depend>
+  <depend>rosidl_runtime_py</depend>
   <depend>triplestar_msgs</depend>
   <depend>ament_index_python</depend>
   <depend>sensor_msgs</depend>
