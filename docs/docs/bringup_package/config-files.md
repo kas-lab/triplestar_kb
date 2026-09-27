@@ -114,8 +114,9 @@ within `timeout_sec` produces a default-initialized response of the service type
 failure is logged and no insertion is applied. ROS 2 service responses have no
 generic transport-error field, so callers that need to distinguish this fallback
 should use a service type whose response contains an application-level success or
-status field. Async forwarding, a reentrant callback group, and Triplestar's
-multi-threaded executor keep these failures from blocking the node indefinitely.
+status field. The mirror awaits its ROS client future cooperatively in a reentrant
+callback group, so target responses and timeout timers progress while Triplestar
+keeps all reasoning serialized on its single-threaded executor.
 
 ## Query-time topic subscribers
 

@@ -5,7 +5,7 @@ from time import sleep
 
 import pytest
 import rclpy
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from std_srvs.srv import SetBool
 from triplestar_core.config import TriplestarConfig
@@ -43,10 +43,13 @@ INSERT DATA {
     target_node = Node('test_insertion_service_target')
     triplestar_node = Node('test_insertion_service_mirror')
     caller_node = Node('test_insertion_service_caller')
-    executor = MultiThreadedExecutor(num_threads=4)
-    executor.add_node(target_node)
+    # The Triplestar node and caller share the production single-threaded
+    # executor. The target represents an independent ROS node/process.
+    executor = SingleThreadedExecutor()
+    target_executor = SingleThreadedExecutor()
     executor.add_node(triplestar_node)
     executor.add_node(caller_node)
+    target_executor.add_node(target_node)
 
     def target_callback(request, response):
         if not request.data:
@@ -75,7 +78,9 @@ INSERT DATA {
     manager.start()
 
     spin_thread = Thread(target=executor.spin, daemon=True)
+    target_spin_thread = Thread(target=target_executor.spin, daemon=True)
     spin_thread.start()
+    target_spin_thread.start()
     client = caller_node.create_client(SetBool, mirror_name)
     target_service = None
     try:
@@ -137,7 +142,11 @@ ASK { ex:robot ex:message "disabled" . }
         if target_service is not None:
             target_node.destroy_service(target_service)
         executor.shutdown(timeout_sec=5.0)
-        for node in (caller_node, triplestar_node, target_node):
+        target_executor.shutdown(timeout_sec=5.0)
+        for node in (caller_node, triplestar_node):
             executor.remove_node(node)
             node.destroy_node()
+        target_executor.remove_node(target_node)
+        target_node.destroy_node()
         spin_thread.join(timeout=5.0)
+        target_spin_thread.join(timeout=5.0)
