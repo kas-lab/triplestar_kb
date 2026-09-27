@@ -10,7 +10,8 @@ TriplestarKB expects custom bringup packages to keep the generated directory str
 All settings live in `config/triplestar.yaml`. It contains:
 
 - `knowledge_base` settings (`store_path`, `base_iri`, `clear_on_startup`, and `preload_files`);
-- lists of insertion, query-time topic, and query-time TF subscribers; and
+- lists of insertion, query-time topic, and query-time TF subscribers;
+- a list of dynamically typed insertion service mirrors; and
 - a list of query services.
 
 See the [configuration reference](config-files.md) for the schema and examples.

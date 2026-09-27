@@ -17,6 +17,12 @@ insertion_subscribers:
   - topic: "/detections"
     template: "ExampleInsertion.sparql.tmpl"
 
+# Mirror a service after inferring its type, then insert facts from each response.
+insertion_services:
+  - service: "/robot/set_enabled"
+    template: "SetEnabledInsertion.sparql.tmpl"
+    timeout_sec: 2.0
+
 # Expose the latest topic value as a query-time SPARQL function.
 query_time_topic_subscribers:
   - topic: "/clock"

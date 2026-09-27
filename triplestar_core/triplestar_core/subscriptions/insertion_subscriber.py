@@ -2,6 +2,7 @@ from jinja2 import Template
 from opentelemetry import trace
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
+from triplestar_core.insertion import apply_insertion_template
 
 TRACER = trace.get_tracer('triplestar_bench')
 
@@ -39,9 +40,7 @@ class InsertionSubscriber:
         span.set_attribute('template', str(self._template.name))
 
         try:
-            query = self._template.render(msg=msg)
-            if query:
-                self._update_fn(query)
+            apply_insertion_template(self._template, self._update_fn, msg=msg)
         except Exception as e:  # noqa: BLE001
             self._logger.error(f'Insertion failed for {self._topic}: {e}')
 

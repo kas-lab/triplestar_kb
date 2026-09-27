@@ -1,17 +1,13 @@
-import base64
 from collections.abc import Callable
 from pathlib import Path
 import time
 
 from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from jinja2 import StrictUndefined
 from jinja2 import TemplateNotFound
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import LifecycleNode
 from rclpy.node import Node
-from rclpy.serialization import serialize_message
 from ros2topic.api import get_msg_class
 import tf2_ros
 from triplestar_core.config import InsertionSubscriberConfig
@@ -21,20 +17,12 @@ from triplestar_core.config import TF_POSITION_FUNCTION_NAME
 from triplestar_core.config import TriplestarConfig
 from triplestar_core.conversions import rdf_literal_to_python
 from triplestar_core.conversions import to_rdf_literal
+from triplestar_core.insertion import make_insertion_environment
 from triplestar_core.knowledge_base import KnowledgeBase
 from triplestar_core.subscriptions.insertion_subscriber import InsertionSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TopicLatestSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TransformLatestSubscriber
 from triplestar_core.subscriptions.query_time_subscriber import TransformPositionLookup
-
-
-def _serialize_filter(value) -> str:
-    return base64.b64encode(serialize_message(value)).decode('utf-8')
-
-
-def _rdf_filter(value) -> str:
-    literal = to_rdf_literal(value)
-    return str(literal) if literal is not None else repr(value)
 
 
 def make_query_fn(sub):
@@ -105,13 +93,7 @@ class SubscriptionManager:
             make_tf_position_query_fn(self._tf_position_lookup),
         )
 
-        env = Environment(
-            loader=FileSystemLoader(self.templates_dir),
-            autoescape=False,
-            undefined=StrictUndefined,
-        )
-        env.filters['rdf'] = _rdf_filter
-        env.filters['serialize'] = _serialize_filter
+        env = make_insertion_environment(self.templates_dir)
 
         self._load_topic_query_subs(self.config.query_time_topic_subscribers)
         if self.config.query_time_tf_subscribers:

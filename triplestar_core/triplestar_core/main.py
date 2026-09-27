@@ -1,10 +1,13 @@
 import rclpy
+from rclpy.executors import MultiThreadedExecutor
 from triplestar_core.core_lifecycle_node import TriplestarCoreNode
 
 
 def run(args=None):
     node = TriplestarCoreNode()
-    executor = rclpy.executors.SingleThreadedExecutor()
+    # Mirrored service callbacks asynchronously await target clients. Multiple
+    # executor threads let those client responses and timeout timers make progress.
+    executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
 
     try:

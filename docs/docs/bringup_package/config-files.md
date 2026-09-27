@@ -20,6 +20,11 @@ insertion_subscribers:
   - topic: "/detections"
     template: "ExampleInsertion.sparql.tmpl"
 
+insertion_services:
+  - service: "/robot/set_enabled"
+    template: "SetEnabledInsertion.sparql.tmpl"
+    timeout_sec: 2.0
+
 query_time_topic_subscribers:
   - topic: "/battery_state"
     sparql_fn_name: "batteryLevel"
@@ -67,6 +72,50 @@ INSERT DATA {
 
 See the [ROS → RDF conversion reference](../concepts/ros-to-rdf.md) for supported
 conversions.
+
+## Insertion services
+
+Each entry mirrors a target ROS 2 `service` below
+`/triplestar/ingest/`. For example, `/robot/set_enabled` is exposed as
+`/triplestar/ingest/robot/set_enabled`. Do not configure a service type. Triplestar
+infers it from the live ROS graph and creates a target client and mirror with that
+same type.
+
+```yaml
+insertion_services:
+  - service: "/robot/set_enabled"
+    template: "SetEnabledInsertion.sparql.tmpl"
+    timeout_sec: 2.0
+```
+
+A call to the mirror is forwarded asynchronously to the target. After a successful
+response, Triplestar renders the template with both `request` and `response`, applies
+the resulting SPARQL update, and returns the target response unchanged:
+
+```jinja2
+{% raw %}
+PREFIX ex: <http://example.org/>
+
+INSERT DATA {
+  ex:robot ex:enabled {{ response.success | rdf }} ;
+           ex:lastCommand {{ request.data | rdf }} .
+}
+{% endraw %}
+```
+
+`timeout_sec` is optional and defaults to 2 seconds. It must be greater than zero.
+If the target is unavailable when Triplestar activates, activation does not block or
+fail. Discovery retries in the background, and the mirror appears after exactly one
+loadable service type is advertised. Missing, unloadable, or ambiguous types are
+logged and retried.
+
+After a mirror has been created, a target that becomes unavailable or does not reply
+within `timeout_sec` produces a default-initialized response of the service type. The
+failure is logged and no insertion is applied. ROS 2 service responses have no
+generic transport-error field, so callers that need to distinguish this fallback
+should use a service type whose response contains an application-level success or
+status field. Async forwarding, a reentrant callback group, and Triplestar's
+multi-threaded executor keep these failures from blocking the node indefinitely.
 
 ## Query-time topic subscribers
 

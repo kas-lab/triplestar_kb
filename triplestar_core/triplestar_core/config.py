@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from pydantic import Field
 from pydantic import root_validator
 from pydantic import validator
+from rclpy.exceptions import InvalidServiceNameException
+from rclpy.validate_topic_name import validate_topic_name
 
 TF_POSITION_FUNCTION_NAME = 'tfPosition'
 RESERVED_QUERY_TIME_FUNCTION_NAMES = {TF_POSITION_FUNCTION_NAME}
@@ -19,6 +21,30 @@ class KBConfig(BaseModel):
 class InsertionSubscriberConfig(BaseModel):
     topic: str
     template: str
+
+
+class InsertionServiceConfig(BaseModel):
+    service: str
+    template: str
+    timeout_sec: float = Field(default=2.0, gt=0)
+
+    @validator('service', 'template')
+    @classmethod
+    def _not_blank(cls, value: str, field) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError(f'{field.name} must not be blank')
+        if field.name == 'service':
+            if value == '/':
+                raise ValueError('service must name a ROS service')
+            try:
+                validate_topic_name(value, is_service=True)
+            except InvalidServiceNameException as e:
+                raise ValueError(f'invalid ROS service name: {e}') from e
+        return value
+
+    class Config:
+        extra = 'forbid'
 
 
 class QueryTimeTopicSubscriberConfig(BaseModel):
@@ -41,6 +67,7 @@ class QueryServiceConfig(BaseModel):
 class TriplestarConfig(BaseModel):
     knowledge_base: KBConfig
     insertion_subscribers: list[InsertionSubscriberConfig] = Field(default_factory=list)
+    insertion_services: list[InsertionServiceConfig] = Field(default_factory=list)
     query_time_topic_subscribers: list[QueryTimeTopicSubscriberConfig] = Field(
         default_factory=list
     )
@@ -49,6 +76,7 @@ class TriplestarConfig(BaseModel):
 
     @validator(
         'insertion_subscribers',
+        'insertion_services',
         'query_time_topic_subscribers',
         'query_time_tf_subscribers',
         'query_services',
@@ -76,6 +104,12 @@ class TriplestarConfig(BaseModel):
                 'Query-time SPARQL function names are reserved: '
                 f'{", ".join(reserved_names)}'
             )
+
+        insertion_service_names = [
+            service.service for service in values.get('insertion_services', [])
+        ]
+        if len(insertion_service_names) != len(set(insertion_service_names)):
+            raise ValueError('Insertion service names must be unique')
 
         service_names = [service.service_name for service in values.get('query_services', [])]
         if len(service_names) != len(set(service_names)):

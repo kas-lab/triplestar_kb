@@ -1,0 +1,6 @@
+PREFIX ex: <http://example.org/>
+
+INSERT DATA {
+  ex:robot ex:enabled {{ response.success | rdf }} ;
+           ex:lastSetEnabledRequest {{ request.data | rdf }} .
+}
